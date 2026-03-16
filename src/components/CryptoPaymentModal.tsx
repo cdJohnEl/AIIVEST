@@ -24,12 +24,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { useAccount, useSendTransaction, useBalance } from 'wagmi';
+import { useAccount, useSendTransaction } from 'wagmi';
 import { parseEther } from 'viem';
 import { checkBitcoinBalance, checkEthereumBalance } from '../lib/blockchain';
 import { useEffect } from 'react';
 import { db } from '../lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useInvestment } from '../contexts/InvestmentContext';
 
@@ -118,8 +118,7 @@ const anonymousProcessors = [
 export default function CryptoPaymentModal({ isOpen, onClose, type }: CryptoPaymentModalProps) {
   const { user } = useAuth();
   const { portfolio } = useInvestment();
-  const { address: userAddress, isConnected } = useAccount();
-  const { data: ethBalance } = useBalance({ address: userAddress });
+  const { isConnected } = useAccount();
   const { sendTransaction } = useSendTransaction();
   
   const [selectedCrypto, setSelectedCrypto] = useState(cryptoOptions[0]);

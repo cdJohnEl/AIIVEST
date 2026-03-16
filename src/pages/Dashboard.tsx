@@ -86,7 +86,6 @@ export default function Dashboard() {
   // Dynamic Performance Data (Simulated history based on current growth)
   const performanceData = useMemo(() => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-    const currentTotal = totalValue;
     const initialValue = portfolio.totalInvested || 1000;
     const growth = portfolio.totalReturns;
     

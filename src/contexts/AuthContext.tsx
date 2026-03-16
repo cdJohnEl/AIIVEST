@@ -135,7 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Check if referred by someone
       if (referralCodeFromInput) {
-        const { collection, query, where, getDocs, updateDoc, addDoc, runTransaction } = await import('firebase/firestore');
+        const { collection, query, where, getDocs, runTransaction } = await import('firebase/firestore');
         const usersRef = collection(db, 'users');
         const q = query(usersRef, where('referralCode', '==', referralCodeFromInput.trim().toUpperCase()));
         const querySnapshot = await getDocs(q);
