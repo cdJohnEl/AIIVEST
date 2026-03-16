@@ -1,0 +1,32 @@
+# ============================================
+# AIVEST — .gitattributes
+# Ensure consistent line endings across platforms
+# ============================================
+
+# Default: auto normalize all text files
+* text=auto
+
+# ---- Source Code ----
+*.ts        text eol=lf
+*.tsx       text eol=lf
+*.js        text eol=lf
+*.jsx       text eol=lf
+*.css       text eol=lf
+*.html      text eol=lf
+*.json      text eol=lf
+*.md        text eol=lf
+*.env*      text eol=lf
+
+# ---- Binary files (do not touch line endings) ----
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.ico       binary
+*.svg       text eol=lf
+*.woff      binary
+*.woff2     binary
+*.ttf       binary
+*.otf       binary
+*.eot       binary
+*.webp      binary
