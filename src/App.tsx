@@ -28,8 +28,10 @@ import AdminLayout from './components/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import UserManagement from './pages/admin/UserManagement';
 import TransactionManagement from './pages/admin/TransactionManagement';
+import AffiliateProgram from './pages/AffiliateProgram';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
+import { LiveChat } from './components/LiveChat';
 import './App.css';
 
 function AppRoutes() {
@@ -86,6 +88,7 @@ function AppRoutes() {
         <Route path="/careers" element={<Careers />} />
         <Route path="/press" element={<Press />} />
         <Route path="/partners" element={<Partners />} />
+        <Route path="/affiliate-program" element={<AffiliateProgram />} />
         
         {/* Legal Routes */}
         <Route path="/privacy" element={<Privacy />} />
@@ -113,6 +116,7 @@ function AppRoutes() {
         {/* Catch-all redirect */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <LiveChat />
     </div>
   );
 }

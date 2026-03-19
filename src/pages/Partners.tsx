@@ -10,6 +10,7 @@ import {
   Mail
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 
 const partnerTypes = [
   {
@@ -38,13 +39,15 @@ const partnerTypes = [
   },
 ];
 
+import { Badge } from '@/components/ui/badge';
+
 const currentPartners = [
-  { name: 'Fireblocks', category: 'Custody', logo: 'F' },
-  { name: 'Chainalysis', category: 'Compliance', logo: 'C' },
-  { name: 'CoinGecko', category: 'Data', logo: 'G' },
-  { name: 'Alchemy', category: 'Infrastructure', logo: 'A' },
-  { name: 'Ledger', category: 'Security', logo: 'L' },
-  { name: 'Messari', category: 'Research', logo: 'M' },
+  { name: 'Fireblocks', category: 'Custody', logo: 'F', status: 'Platinum' },
+  { name: 'Chainalysis', category: 'Compliance', logo: 'C', status: 'Verified' },
+  { name: 'CoinGecko', category: 'Data', logo: 'G', status: 'Verified' },
+  { name: 'Alchemy', category: 'Infrastructure', logo: 'A', status: 'Platinum' },
+  { name: 'Ledger', category: 'Security', logo: 'L', status: 'Verified' },
+  { name: 'Messari', category: 'Research', logo: 'M', status: 'Verified' },
 ];
 
 const stats = [
@@ -120,8 +123,17 @@ export default function Partners() {
           <div className="grid grid-cols-3 md:grid-cols-6 gap-6">
             {currentPartners.map((partner) => (
               <div key={partner.name} className="text-center">
-                <div className="w-16 h-16 rounded-xl bg-white/5 flex items-center justify-center mx-auto mb-3">
+                <div className="w-16 h-16 rounded-xl bg-white/5 flex items-center justify-center mx-auto mb-3 relative group">
                   <span className="text-2xl font-bold text-[#2D6BFF]">{partner.logo}</span>
+                  <div className="absolute -top-2 -right-2">
+                    <Badge className={`text-[8px] px-1 h-4 ${
+                      partner.status === 'Platinum' 
+                        ? 'bg-gradient-to-r from-yellow-400 to-yellow-600' 
+                        : 'bg-[#2D6BFF]'
+                    }`}>
+                      {partner.status}
+                    </Badge>
+                  </div>
                 </div>
                 <p className="text-[#F4F6FF] font-medium text-sm">{partner.name}</p>
                 <p className="text-xs text-[#A7B1C8]">{partner.category}</p>
@@ -145,10 +157,12 @@ export default function Partners() {
                 Refer users to AI Invest Pro and earn recurring commissions on their investments.
               </p>
             </div>
-            <Button className="btn-primary">
-              Become an Affiliate
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
+            <Link to="/affiliate-program">
+              <Button className="btn-primary">
+                Become an Affiliate
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
           </div>
         </div>
 

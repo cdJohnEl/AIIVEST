@@ -199,25 +199,23 @@ export default function CryptoPaymentModal({ isOpen, onClose, type }: CryptoPaym
   const handleConfirm = async () => {
     setIsProcessing(true);
     
-    if (!isDeposit && user) {
+    if (user) {
       try {
         await addDoc(collection(db, 'transactions'), {
           userId: user.id,
           userName: user.name,
-          type: 'withdrawal',
+          type: isDeposit ? 'deposit' : 'withdrawal',
           amount: parseFloat(amount),
           currency: selectedCrypto.symbol,
           status: 'pending',
-          toAddress: walletAddress,
+          toAddress: isDeposit ? generatedAddress : walletAddress,
           confirmations: 0,
           createdAt: new Date().toISOString()
         });
+        console.log(`[CryptoPaymentModal] ${isDeposit ? 'Deposit' : 'Withdrawal'} logged to Firestore`);
       } catch (err) {
-        console.error("Error logging withdrawal request:", err);
+        console.error(`[CryptoPaymentModal] Error logging ${isDeposit ? 'deposit' : 'withdrawal'}:`, err);
       }
-    } else {
-      // Simulate API/Contract interaction delay for deposits
-      await new Promise(resolve => setTimeout(resolve, 1500));
     }
     
     setStep('success');

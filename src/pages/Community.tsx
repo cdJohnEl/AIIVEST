@@ -10,6 +10,10 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import { useState } from 'react';
+import { db } from '../lib/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const communityStats = [
   { value: '50K+', label: 'Community Members' },
@@ -83,6 +87,36 @@ const upcomingEvents = [
 ];
 
 export default function Community() {
+  const [email, setEmail] = useState('');
+  const [isSubscribing, setIsSubscribing] = useState(false);
+  const [subscribed, setSubscribed] = useState(false);
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim() || !email.includes('@')) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    setIsSubscribing(true);
+    try {
+      await addDoc(collection(db, 'subscribers'), {
+        email: email.trim().toLowerCase(),
+        subscribedAt: serverTimestamp(),
+        source: 'community_newsletter'
+      });
+
+      setSubscribed(true);
+      setEmail('');
+      toast.success('Successfully subscribed to newsletter!');
+    } catch (error) {
+      console.error('Newsletter Error:', error);
+      toast.error('Failed to subscribe. Please try again.');
+    } finally {
+      setIsSubscribing(false);
+    }
+  };
+
   return (
     <div className="min-h-screen pt-24 pb-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -185,25 +219,40 @@ export default function Community() {
         </div>
 
         {/* Newsletter */}
-        <div className="glass-card p-8 text-center">
-          <TrendingUp className="w-10 h-10 text-[#2D6BFF] mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-[#F4F6FF] mb-2">
-            Stay in the Loop
-          </h2>
-          <p className="text-[#A7B1C8] mb-6 max-w-lg mx-auto">
-            Subscribe to our newsletter for weekly market insights, product updates, 
-            and exclusive community content.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-md mx-auto">
-            <input
-              type="email"
-              placeholder="Enter your email"
-              className="flex-1 px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-[#F4F6FF] placeholder:text-[#A7B1C8] focus:outline-none focus:border-[#2D6BFF]"
-            />
-            <Button className="btn-primary">
-              Subscribe
-            </Button>
-          </div>
+        <div className="glass-card p-8 text-center relative overflow-hidden">
+          {subscribed ? (
+            <div className="py-8 animate-in fade-in zoom-in duration-500">
+              <div className="w-16 h-16 bg-[#10B981]/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Zap className="w-8 h-8 text-[#10B981]" />
+              </div>
+              <h2 className="text-2xl font-bold text-[#F4F6FF] mb-2">You're on the list!</h2>
+              <p className="text-[#A7B1C8]">Thank you for subscribing to the AIVEST newsletter.</p>
+            </div>
+          ) : (
+            <>
+              <TrendingUp className="w-10 h-10 text-[#2D6BFF] mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-[#F4F6FF] mb-2">
+                Stay in the Loop
+              </h2>
+              <p className="text-[#A7B1C8] mb-6 max-w-lg mx-auto">
+                Subscribe to our newsletter for weekly market insights, product updates, 
+                and exclusive community content.
+              </p>
+              <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-md mx-auto">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  required
+                  className="flex-1 w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-[#F4F6FF] placeholder:text-[#A7B1C8] focus:outline-none focus:border-[#2D6BFF]"
+                />
+                <Button type="submit" disabled={isSubscribing} className="btn-primary w-full sm:w-auto min-w-[120px]">
+                  {isSubscribing ? 'Joining...' : 'Subscribe'}
+                </Button>
+              </form>
+            </>
+          )}
         </div>
       </div>
     </div>

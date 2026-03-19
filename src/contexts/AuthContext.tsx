@@ -2,8 +2,10 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   onAuthStateChanged, 
   signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signOut
+  createUserWithEmailAndPassword,
+  updateProfile,
+  signOut,
+  sendEmailVerification,
 } from 'firebase/auth';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
@@ -126,8 +128,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const firebaseUser = userCredential.user;
 
       // Also update the Auth profile as a backup
-      const { updateProfile } = await import('firebase/auth');
+      const { updateProfile, sendEmailVerification } = await import('firebase/auth');
+      await sendEmailVerification(firebaseUser);
+      console.log('[AuthContext] Verification email sent to:', email);
+      
       await updateProfile(firebaseUser, { displayName: name });
+
+      // Automatically subscribe to newsletter
+      const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
+      await addDoc(collection(db, 'subscribers'), {
+        email: email.trim().toLowerCase(),
+        subscribedAt: serverTimestamp(),
+        source: 'signup_auto'
+      });
+      console.log('[AuthContext] User automatically subscribed to newsletter');
 
       const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`;
       const newReferralCode = generateReferralCode();
