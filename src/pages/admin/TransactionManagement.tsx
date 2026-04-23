@@ -49,6 +49,7 @@ interface Transaction {
   status: 'pending' | 'detected' | 'confirmed' | 'failed';
   txHash?: string;
   toAddress: string;
+  receiptUrl?: string;
   confirmations: number;
   createdAt: any;
   updatedAt?: any;
@@ -163,6 +164,7 @@ export default function TransactionManagement() {
         status: 'detected',
         toAddress: `bc1q${Math.random().toString(36).substring(7)}...`,
         confirmations: 0,
+        receiptUrl: 'https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg',
         createdAt: new Date().toISOString()
       };
 
@@ -350,9 +352,16 @@ export default function TransactionManagement() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-56 bg-[#0A0E1A] border-white/10 text-[#F4F6FF]">
                           <DropdownMenuLabel>Verification Tools</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => window.open(`https://etherscan.io/tx/${tx.txHash}`, '_blank')}>
-                            <ExternalLink className="w-4 h-4 mr-2" /> View on Block Explorer
-                          </DropdownMenuItem>
+                          {tx.receiptUrl && (
+                            <DropdownMenuItem onClick={() => window.open(tx.receiptUrl, '_blank')} className="text-[#2D6BFF] focus:bg-[#2D6BFF]/10 focus:text-[#2D6BFF]">
+                              <ExternalLink className="w-4 h-4 mr-2" /> View Attached Receipt
+                            </DropdownMenuItem>
+                          )}
+                          {tx.txHash && (
+                            <DropdownMenuItem onClick={() => window.open(`https://etherscan.io/tx/${tx.txHash}`, '_blank')}>
+                              <ExternalLink className="w-4 h-4 mr-2" /> View on Block Explorer
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuSeparator className="bg-white/5" />
                           <DropdownMenuItem 
                             onClick={() => handleForceApprove(tx)}

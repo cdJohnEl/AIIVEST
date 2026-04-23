@@ -88,6 +88,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${firebaseUser.email}`,
             role: 'user',
           });
+
+          // Self-heal: Create missing user and portfolio documents for broken registrations
+          const healAccount = async () => {
+            try {
+              const { setDoc, doc, serverTimestamp } = await import('firebase/firestore');
+              
+              await setDoc(doc(db, 'users', firebaseUser.uid), {
+                 name: fallbackName,
+                 email: firebaseUser.email,
+                 role: 'user',
+                 avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${firebaseUser.email}`,
+                 createdAt: serverTimestamp(),
+                 referralCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
+                 referredBy: ''
+              }, { merge: true });
+
+              await setDoc(doc(db, 'portfolios', firebaseUser.uid), {
+                 totalInvested: 0,
+                 totalReturns: 0,
+                 dailyReturns: 0,
+                 totalProfit: 0,
+                 monthlyProfit: 0,
+                 activeInvestments: 0,
+                 availableBalance: 0,
+                 lastUpdated: serverTimestamp()
+              }, { merge: true });
+              console.log('AuthContext: Successfully healed missing user profile and portfolio');
+            } catch (err) {
+              console.error('AuthContext: Failed to heal missing profile', err);
+            }
+          };
+          healAccount();
         }
         setLoading(false);
       }, (error) => {
@@ -133,13 +165,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await updateProfile(firebaseUser, { displayName: name });
 
       // Automatically subscribe to newsletter
-      const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
-      await addDoc(collection(db, 'subscribers'), {
-        email: email.trim().toLowerCase(),
-        subscribedAt: serverTimestamp(),
-        source: 'signup_auto'
-      });
-      console.log('[AuthContext] User automatically subscribed to newsletter');
+      try {
+        const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
+        await addDoc(collection(db, 'subscribers'), {
+          email: email.trim().toLowerCase(),
+          subscribedAt: serverTimestamp(),
+          source: 'signup_auto'
+        });
+        console.log('[AuthContext] User automatically subscribed to newsletter');
+      } catch (err) {
+        console.error('[AuthContext] Failed to auto-subscribe (non-blocking):', err);
+      }
 
       const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`;
       const newReferralCode = generateReferralCode();
@@ -147,45 +183,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Check if referred by someone
       if (referralCodeFromInput) {
-        const { collection, query, where, getDocs, runTransaction } = await import('firebase/firestore');
-        const usersRef = collection(db, 'users');
-        const q = query(usersRef, where('referralCode', '==', referralCodeFromInput.trim().toUpperCase()));
-        const querySnapshot = await getDocs(q);
-        
-        if (!querySnapshot.empty) {
-          const referrerDoc = querySnapshot.docs[0];
-          referredBy = referrerDoc.id;
+        try {
+          const { collection, query, where, getDocs, runTransaction } = await import('firebase/firestore');
+          const usersRef = collection(db, 'users');
+          const q = query(usersRef, where('referralCode', '==', referralCodeFromInput.trim().toUpperCase()));
+          const querySnapshot = await getDocs(q);
           
-          // Transaction to safely award bonus
-          try {
-             await runTransaction(db, async (transaction) => {
-                const referrerPortfolioRef = doc(db, 'portfolios', referredBy);
-                const referrerPortSnap = await transaction.get(referrerPortfolioRef);
-                
-                if (referrerPortSnap.exists()) {
-                    const currentPortfolio = referrerPortSnap.data();
-                    transaction.update(referrerPortfolioRef, {
-                        availableBalance: (currentPortfolio.availableBalance || 0) + 50
-                    });
+          if (!querySnapshot.empty) {
+            const referrerDoc = querySnapshot.docs[0];
+            referredBy = referrerDoc.id;
+            
+            // Transaction to safely award bonus
+            try {
+               await runTransaction(db, async (transaction) => {
+                  const referrerPortfolioRef = doc(db, 'portfolios', referredBy);
+                  const referrerPortSnap = await transaction.get(referrerPortfolioRef);
+                  
+                  if (referrerPortSnap.exists()) {
+                      const currentPortfolio = referrerPortSnap.data();
+                      transaction.update(referrerPortfolioRef, {
+                          availableBalance: (currentPortfolio.availableBalance || 0) + 50
+                      });
 
-                    // Log transaction
-                    const newTxRef = doc(collection(db, 'transactions'));
-                    transaction.set(newTxRef, {
-                        userId: referredBy,
-                        userName: referrerDoc.data().name,
-                        type: 'referral_bonus',
-                        amount: 50,
-                        currency: 'USD',
-                        status: 'confirmed',
-                        toAddress: 'AIVEST Referral System',
-                        confirmations: 6,
-                        createdAt: new Date().toISOString()
-                    });
-                }
-             });
-          } catch (e) {
-              console.error("Failed to award referral bonus:", e);
+                      // Log transaction
+                      const newTxRef = doc(collection(db, 'transactions'));
+                      transaction.set(newTxRef, {
+                          userId: referredBy,
+                          userName: referrerDoc.data().name,
+                          type: 'referral_bonus',
+                          amount: 50,
+                          currency: 'USD',
+                          status: 'confirmed',
+                          toAddress: 'AIVEST Referral System',
+                          confirmations: 6,
+                          createdAt: new Date().toISOString()
+                      });
+                  }
+               });
+            } catch (e) {
+                console.error("Failed to award referral bonus:", e);
+            }
           }
+        } catch (err) {
+          console.error('[AuthContext] Referral check failed (non-blocking):', err);
         }
       }
 

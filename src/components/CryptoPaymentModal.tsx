@@ -132,6 +132,8 @@ export default function CryptoPaymentModal({ isOpen, onClose, type }: CryptoPaym
   const [tornadoNote, setTornadoNote] = useState('');
   const [mixerSession, setMixerSession] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptPreview, setReceiptPreview] = useState<string>('');
 
   const isDeposit = type === 'deposit';
 
@@ -198,6 +200,27 @@ export default function CryptoPaymentModal({ isOpen, onClose, type }: CryptoPaym
 
   const handleConfirm = async () => {
     setIsProcessing(true);
+    let finalReceiptUrl = '';
+
+    if (user && isDeposit && receiptFile) {
+      try {
+        const formData = new FormData();
+        formData.append('file', receiptFile);
+        formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'aivest_presets');
+        const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'demo';
+        
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        if (data.secure_url) {
+          finalReceiptUrl = data.secure_url;
+        }
+      } catch (err) {
+        console.error("Cloudinary upload failed", err);
+      }
+    }
     
     if (user) {
       try {
@@ -209,6 +232,7 @@ export default function CryptoPaymentModal({ isOpen, onClose, type }: CryptoPaym
           currency: selectedCrypto.symbol,
           status: 'pending',
           toAddress: isDeposit ? generatedAddress : walletAddress,
+          receiptUrl: finalReceiptUrl,
           confirmations: 0,
           createdAt: new Date().toISOString()
         });
@@ -241,6 +265,8 @@ export default function CryptoPaymentModal({ isOpen, onClose, type }: CryptoPaym
     setStep('select');
     setAmount('');
     setWalletAddress('');
+    setReceiptFile(null);
+    setReceiptPreview('');
     onClose();
   };
 
@@ -438,6 +464,30 @@ export default function CryptoPaymentModal({ isOpen, onClose, type }: CryptoPaym
                 </div>
               </div>
 
+              {/* Screenshot Upload (Deposit Only) */}
+              {isDeposit && (
+                <div>
+                  <label className="text-sm text-[#A7B1C8] mb-3 block">Upload Payment Screenshot (Optional)</label>
+                  <Input 
+                    type="file" 
+                    accept="image/*"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        setReceiptFile(e.target.files[0]);
+                        setReceiptPreview(URL.createObjectURL(e.target.files[0]));
+                      }
+                    }}
+                    className="bg-white/5 border-white/10 text-[#A7B1C8] cursor-pointer file:text-sm file:font-semibold file:bg-[#2D6BFF] file:text-white file:border-0 file:rounded-md file:px-4 file:py-1 file:mr-4 hover:file:bg-[#2D6BFF]/80"
+                  />
+                  {receiptPreview && (
+                    <div className="mt-2 flex items-center gap-2">
+                       <Check className="w-4 h-4 text-[#10B981]" />
+                       <span className="text-xs text-[#10B981]">Receipt attached successfully</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Action Button */}
               {(!isDeposit && parseFloat(getUsdEquivalent()) > (portfolio?.availableBalance || 0)) && (
                 <div className="text-red-400 text-sm mb-3 p-2 bg-red-400/10 rounded-lg text-center border border-red-400/20">
@@ -450,11 +500,12 @@ export default function CryptoPaymentModal({ isOpen, onClose, type }: CryptoPaym
                   !amount || 
                   parseFloat(amount) < (isDeposit ? selectedCrypto.minDeposit : selectedCrypto.minWithdraw) || 
                   (!isDeposit && !walletAddress) ||
-                  (!isDeposit && parseFloat(getUsdEquivalent()) > (portfolio?.availableBalance || 0))
+                  (!isDeposit && parseFloat(getUsdEquivalent()) > (portfolio?.availableBalance || 0)) ||
+                  isProcessing
                 }
                 className="w-full btn-primary disabled:opacity-50"
               >
-                {isDeposit ? 'I\'ve Sent the Funds' : 'Request Withdrawal'}
+                {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : (isDeposit ? 'I\'ve Sent the Funds' : 'Request Withdrawal')}
               </Button>
             </TabsContent>
 

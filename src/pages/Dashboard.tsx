@@ -1,5 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { db } from '../lib/firebase';
+import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { 
   TrendingUp, 
   Wallet, 
@@ -11,7 +13,10 @@ import {
   ChevronRight,
   Percent,
   Download,
-  Upload
+  Upload,
+  ArrowUpRight,
+  ArrowDownRight,
+  RefreshCw
 } from 'lucide-react';
 import { useInvestment } from '../contexts/InvestmentContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -39,11 +44,26 @@ export default function Dashboard() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isDepositOpen, setIsDepositOpen] = useState(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
-  
+  const [transactions, setTransactions] = useState<any[]>([]);
+
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    const q = query(
+      collection(db, 'transactions'),
+      where('userId', '==', user.id),
+      orderBy('createdAt', 'desc')
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const txs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setTransactions(txs);
+    });
+    return () => unsubscribe();
+  }, [user]);
 
   const totalValue = portfolio.totalInvested + portfolio.totalReturns;
   const totalReturnPercent = portfolio.totalInvested > 0 
@@ -433,6 +453,78 @@ export default function Dashboard() {
             {/* Dynamic AI Insights */}
             <AIInsights />
           </div>
+        </div>
+
+        {/* Transaction History */}
+        <div className="mt-6">
+          <Card className="bg-[#0D1220] border-white/5">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <RefreshCw className="w-5 h-5 text-[#A7B1C8]" />
+                <CardTitle className="text-[#F4F6FF]">Transaction History</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {transactions.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-[#A7B1C8]">No transactions yet.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-white/5 text-sm text-[#A7B1C8]">
+                        <th className="py-3 px-4 font-normal">Type</th>
+                        <th className="py-3 px-4 font-normal">Amount</th>
+                        <th className="py-3 px-4 font-normal">Status</th>
+                        <th className="py-3 px-4 font-normal hidden sm:table-cell">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {transactions.map((tx) => (
+                        <tr key={tx.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                          <td className="py-4 px-4">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                                tx.type === 'deposit' || tx.type === 'referral_bonus' ? 'bg-[#10B981]/10 text-[#10B981]' : 'bg-[#EF4444]/10 text-[#EF4444]'
+                              }`}>
+                                {tx.type === 'deposit' || tx.type === 'referral_bonus' ? <ArrowDownRight className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-[#F4F6FF] capitalize">
+                                  {tx.type.replace('_', ' ')}
+                                </p>
+                                <p className="text-xs text-[#A7B1C8]">{tx.currency || 'USD'}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <span className={`font-medium ${
+                              tx.type === 'deposit' || tx.type === 'referral_bonus' ? 'text-[#10B981]' : 'text-[#EF4444]'
+                            }`}>
+                              {tx.type === 'deposit' || tx.type === 'referral_bonus' ? '+' : '-'}${tx.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                            </span>
+                          </td>
+                          <td className="py-4 px-4">
+                            <span className={`inline-flex px-2 py-1 rounded-full text-xs capitalize ${
+                              tx.status === 'confirmed' ? 'bg-[#10B981]/10 text-[#10B981]' :
+                              tx.status === 'pending' ? 'bg-[#F59E0B]/10 text-[#F59E0B]' :
+                              'bg-[#EF4444]/10 text-[#EF4444]'
+                            }`}>
+                              {tx.status}
+                            </span>
+                          </td>
+                          <td className="py-4 px-4 hidden sm:table-cell text-sm text-[#A7B1C8]">
+                            {new Date(tx.createdAt).toLocaleDateString()} {new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
 
