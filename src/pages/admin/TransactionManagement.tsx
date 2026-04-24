@@ -1,4 +1,20 @@
 import { useState, useEffect } from 'react';
+import { sendEmail } from '../../lib/emailService';
+
+// Skeleton shimmer
+function Skeleton({ className = '' }: { className?: string }) {
+  return <div className={`animate-pulse rounded-lg bg-white/[0.06] ${className}`} />;
+}
+function SkeletonTableRow({ cols = 5 }: { cols?: number }) {
+  return (
+    <tr className="border-b border-white/5">
+      {Array.from({ length: cols }).map((_, i) => (
+        <td key={i} className="px-6 py-4"><Skeleton className="h-4 w-full" /></td>
+      ))}
+    </tr>
+  );
+}
+
 import { 
   collection, 
   onSnapshot, 
@@ -107,8 +123,7 @@ export default function TransactionManagement() {
         // Update Portfolio Balance
         if (tx.type === 'deposit') {
           transaction.update(portfolioRef, {
-            availableBalance: (portfolioData.availableBalance || 0) + tx.amount,
-            totalInvested: (portfolioData.totalInvested || 0) + tx.amount 
+            availableBalance: (portfolioData.availableBalance || 0) + tx.amount
           });
         } else if (tx.type === 'withdrawal') {
           if ((portfolioData.availableBalance || 0) < tx.amount) {
@@ -128,6 +143,23 @@ export default function TransactionManagement() {
       });
 
       toast.success('Transaction manually approved and balance updated');
+
+      // Email notification based on transaction type
+      import('firebase/firestore').then(({ getDoc, doc: fdoc }) => {
+        getDoc(fdoc(db, 'users', tx.userId)).then(userSnap => {
+          if (userSnap.exists()) {
+            const userData = userSnap.data();
+            const template = tx.type === 'deposit' ? 'deposit_approved' : 'withdrawal_approved';
+            sendEmail(template, {
+              to_name: userData.name || tx.userName || 'User',
+              to_email: userData.email || '',
+              amount: `$${tx.amount.toLocaleString()}`,
+              currency: tx.currency,
+              transaction_type: tx.type === 'deposit' ? 'Deposit' : 'Withdrawal',
+            });
+          }
+        });
+      });
     } catch (error) {
       console.error('Force approve error:', error);
       toast.error('Failed to approve transaction');
@@ -289,12 +321,7 @@ export default function TransactionManagement() {
             </thead>
             <tbody className="divide-y divide-white/5 font-mono text-sm">
               {loading ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-[#A7B1C8]">
-                    <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4" />
-                    Connecting to Blockchain Listener...
-                  </td>
-                </tr>
+                <>{[...Array(5)].map((_, i) => <SkeletonTableRow key={i} cols={5} />)}</>
               ) : filteredTx.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center">

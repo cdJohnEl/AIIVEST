@@ -207,26 +207,21 @@ export function InvestmentProvider({ children }: { children: React.ReactNode }) 
         const dailyReturnRate = plan.avgROI / 365 / 100;
         const dailyReturn = amount * dailyReturnRate;
 
-        // Add investment
+        // Add investment as pending (Admin will approve and deduct balance)
         const newInvestmentRef = doc(investmentsRef);
         transaction.set(newInvestmentRef, {
           userId: user.id,
+          userName: user.name || 'User',
           planId,
           planName: plan.name,
           amount,
           startDate: new Date().toISOString(),
           dailyReturn,
           totalReturn: 0,
-          status: 'active',
+          status: 'pending',
         });
-
-        // Update portfolio
-        transaction.update(portfolioRef, {
-          totalInvested: currentPortfolio.totalInvested + amount,
-          dailyReturns: currentPortfolio.dailyReturns + dailyReturn,
-          activeInvestments: currentPortfolio.activeInvestments + 1,
-          availableBalance: currentPortfolio.availableBalance - amount,
-        });
+        
+        // Removed portfolio update: This will now strictly happen in the Admin panel for security!
       });
 
       return true;

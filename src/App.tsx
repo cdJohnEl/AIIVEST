@@ -8,6 +8,7 @@ import BlogPost from './pages/BlogPost';
 import InvestmentPlans from './pages/InvestmentPlans';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
 import Profile from './pages/Profile';
 import About from './pages/About';
 import Features from './pages/Features';
@@ -28,6 +29,7 @@ import AdminLayout from './components/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import UserManagement from './pages/admin/UserManagement';
 import TransactionManagement from './pages/admin/TransactionManagement';
+import InvestmentManagement from './pages/admin/InvestmentManagement';
 import AffiliateProgram from './pages/AffiliateProgram';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -104,12 +106,14 @@ function AppRoutes() {
         
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
         {/* Admin Routes */}
         <Route path="/admin" element={<AdminLayout />}>
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="users" element={<UserManagement />} />
           <Route path="transactions" element={<TransactionManagement />} />
+          <Route path="investments" element={<InvestmentManagement />} />
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
         </Route>
         

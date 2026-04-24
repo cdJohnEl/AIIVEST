@@ -1,88 +1,44 @@
 import { useEffect, useRef } from 'react';
-import { TrendingUp, TrendingDown } from 'lucide-react';
+import { Activity, Globe, Zap, Database } from 'lucide-react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { MarketDataTable } from '../components/LiveMarketData';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const marketData = {
-  indices: [
-    { symbol: 'S&P 500', price: '4,783.45', change: '+1.23%', up: true },
-    { symbol: 'NASDAQ', price: '15,123.68', change: '+2.15%', up: true },
-    { symbol: 'DOW 30', price: '37,545.33', change: '-0.45%', up: false },
-    { symbol: 'RUSSELL', price: '2,045.78', change: '+0.89%', up: true },
-    { symbol: 'VIX', price: '13.42', change: '-5.23%', up: false },
-    { symbol: 'FTSE 100', price: '7,682.30', change: '+0.67%', up: true },
-    { symbol: 'DAX', price: '16,789.45', change: '+1.12%', up: true },
-    { symbol: 'NIKKEI', price: '33,456.78', change: '-0.34%', up: false },
-  ],
-  stocks: [
-    { symbol: 'AAPL', price: '185.92', change: '+1.45%', up: true },
-    { symbol: 'MSFT', price: '378.91', change: '+2.34%', up: true },
-    { symbol: 'GOOGL', price: '142.65', change: '-0.78%', up: false },
-    { symbol: 'AMZN', price: '155.33', change: '+1.89%', up: true },
-    { symbol: 'NVDA', price: '495.22', change: '+4.56%', up: true },
-    { symbol: 'TSLA', price: '248.50', change: '-2.34%', up: false },
-    { symbol: 'META', price: '398.72', change: '+3.21%', up: true },
-    { symbol: 'NFLX', price: '485.90', change: '+1.67%', up: true },
-  ],
-  crypto: [
-    { symbol: 'BTC', price: '$43,245.00', change: '+3.45%', up: true },
-    { symbol: 'ETH', price: '$2,567.89', change: '+2.78%', up: true },
-    { symbol: 'SOL', price: '$98.45', change: '+8.92%', up: true },
-    { symbol: 'XRP', price: '$0.62', change: '-1.23%', up: false },
-    { symbol: 'DOGE', price: '$0.089', change: '+5.67%', up: true },
-    { symbol: 'ADA', price: '$0.58', change: '+1.34%', up: true },
-    { symbol: 'DOT', price: '$7.45', change: '-0.89%', up: false },
-    { symbol: 'LINK', price: '$14.23', change: '+4.12%', up: true },
-  ],
-};
-
-function TickerPill({ item }: { item: { symbol: string; price: string; change: string; up: boolean } }) {
-  return (
-    <div className="flex-shrink-0 glass-card-sm px-4 py-3 mx-2 flex items-center gap-3">
-      <span className="text-[#F4F6FF] font-semibold text-sm">{item.symbol}</span>
-      <span className="text-[#A7B1C8] text-sm">{item.price}</span>
-      <div className={`flex items-center gap-1 text-sm ${item.up ? 'text-[#10B981]' : 'text-red-400'}`}>
-        {item.up ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-        <span>{item.change}</span>
-      </div>
-    </div>
-  );
-}
-
-function TickerBand({ items, reverse = false }: { items: typeof marketData.indices; reverse?: boolean }) {
-  const doubledItems = [...items, ...items, ...items, ...items];
-  
-  return (
-    <div className="overflow-hidden py-2">
-      <div className={`flex ${reverse ? 'ticker-band-reverse' : 'ticker-band'}`}>
-        {doubledItems.map((item, index) => (
-          <TickerPill key={`${item.symbol}-${index}`} item={item} />
-        ))}
-      </div>
-    </div>
-  );
-}
+const stats = [
+  { icon: Globe, value: '50+', label: 'Markets Monitored' },
+  { icon: Database, value: '1M+', label: 'Data Points/sec' },
+  { icon: Zap, value: '<10ms', label: 'Latency' },
+  { icon: Activity, value: '99.99%', label: 'Uptime' },
+];
 
 export default function MarketPulseSection() {
   const sectionRef = useRef<HTMLDivElement>(null);
-  const headlineRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      gsap.fromTo(
-        headlineRef.current,
-        { opacity: 0, y: -30 },
+      gsap.fromTo('.market-title',
+        { opacity: 0, y: 30 },
         {
-          opacity: 1,
-          y: 0,
-          duration: 0.8,
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: 'top 80%',
-            toggleActions: 'play none none reverse',
-          },
+          opacity: 1, y: 0, duration: 0.8,
+          scrollTrigger: { trigger: sectionRef.current, start: 'top 80%' }
+        }
+      );
+      
+      gsap.fromTo('.market-table',
+        { opacity: 0, y: 40 },
+        {
+          opacity: 1, y: 0, duration: 0.8, delay: 0.2,
+          scrollTrigger: { trigger: sectionRef.current, start: 'top 70%' }
+        }
+      );
+      
+      gsap.fromTo('.market-stats',
+        { opacity: 0, y: 30 },
+        {
+          opacity: 1, y: 0, duration: 0.6, stagger: 0.1,
+          scrollTrigger: { trigger: '.market-stats-grid', start: 'top 85%' }
         }
       );
     }, sectionRef);
@@ -91,45 +47,46 @@ export default function MarketPulseSection() {
   }, []);
 
   return (
-    <section
-      id="markets"
-      ref={sectionRef}
-      className="relative py-24 lg:py-32 overflow-hidden"
-    >
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#0D1220]/50 via-transparent to-transparent" />
+    <section id="markets" ref={sectionRef} className="relative py-24 lg:py-32">
+      {/* Background */}
+      <div className="absolute inset-0 bg-[#070A12]">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#8B5CF6]/5 rounded-full blur-[120px]" />
+      </div>
 
-      <div className="relative z-10">
-        <div ref={headlineRef} className="text-center mb-12 px-4 opacity-0">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#F4F6FF] mb-4">
-            Live market pulse
-          </h2>
-          <p className="text-[#A7B1C8] text-lg max-w-xl mx-auto">
-            Real-time data feeds power every decision—no lag, no guesswork.
-          </p>
-        </div>
+      <div className="relative z-10 section-padding">
+        <div className="max-w-7xl mx-auto">
+          {/* Section Header */}
+          <div className="market-title text-center mb-12">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#2D6BFF]/10 border border-[#2D6BFF]/20 mb-6">
+              <div className="w-2 h-2 rounded-full bg-[#2D6BFF] animate-pulse" />
+              <span className="text-xs font-medium text-[#2D6BFF]">Live Data Feed</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#F4F6FF] mb-4">
+              Live Market <span className="text-gradient">Pulse</span>
+            </h2>
+            <p className="text-lg text-[#8B95A8] max-w-2xl mx-auto">
+              Real-time data feeds power every decision—no lag, no guesswork. 
+              Our AI processes millions of data points per second.
+            </p>
+          </div>
 
-        {/* Ticker bands */}
-        <div className="space-y-4">
-          <TickerBand items={marketData.indices} />
-          <TickerBand items={marketData.stocks} reverse />
-          <TickerBand items={marketData.crypto} />
-        </div>
+          {/* Market Data Table */}
+          <div className="market-table mb-12">
+            <MarketDataTable />
+          </div>
 
-        {/* Stats */}
-        <div className="max-w-4xl mx-auto mt-16 px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { label: 'Markets Monitored', value: '50+' },
-              { label: 'Data Points/sec', value: '1M+' },
-              { label: 'Uptime', value: '99.99%' },
-              { label: 'Latency', value: '<10ms' },
-            ].map((stat) => (
-              <div key={stat.label} className="glass-card-sm p-4 text-center">
-                <div className="text-2xl lg:text-3xl font-bold text-[#2D6BFF] mb-1">
-                  {stat.value}
+          {/* Stats Grid */}
+          <div className="market-stats-grid grid grid-cols-2 md:grid-cols-4 gap-4">
+            {stats.map((stat) => (
+              <div 
+                key={stat.label}
+                className="market-stats pro-card p-6 text-center"
+              >
+                <div className="w-12 h-12 rounded-xl bg-[#2D6BFF]/10 flex items-center justify-center mx-auto mb-4">
+                  <stat.icon className="w-6 h-6 text-[#2D6BFF]" />
                 </div>
-                <div className="text-xs text-[#A7B1C8] mono-label">{stat.label}</div>
+                <div className="text-2xl lg:text-3xl font-bold text-[#F4F6FF] mb-1">{stat.value}</div>
+                <div className="text-xs text-[#5A6578] uppercase tracking-wider">{stat.label}</div>
               </div>
             ))}
           </div>

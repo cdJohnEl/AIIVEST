@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Check } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { sendEmail } from '../lib/emailService';
 
 export default function Register() {
   const [name, setName] = useState('');
@@ -27,7 +28,13 @@ export default function Register() {
   const [error, setError] = useState('');
   
   const navigate = useNavigate();
-  const { register } = useAuth();
+  const { register, isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,10 +70,15 @@ export default function Register() {
       };
       
       const success = await register(name, email, password, extendedData, referralCode);
-      if (success) {
-        navigate('/dashboard');
-      } else {
+      if (!success) {
         setError('Registration failed. Please try again.');
+      } else {
+        // Send welcome email
+        await sendEmail('welcome', {
+          to_name: name,
+          to_email: email,
+          platform_name: 'AIVEST',
+        });
       }
     } catch {
       setError('An error occurred. Please try again.');

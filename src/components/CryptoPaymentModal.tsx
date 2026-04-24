@@ -134,6 +134,15 @@ export default function CryptoPaymentModal({ isOpen, onClose, type }: CryptoPaym
   const [isProcessing, setIsProcessing] = useState(false);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = useState<string>('');
+  
+  const [livePrices, setLivePrices] = useState<Record<string, number>>({
+    btc: 43500,
+    eth: 2580,
+    usdt: 1,
+    usdc: 1,
+    xmr: 145,
+    ltc: 72,
+  });
 
   const isDeposit = type === 'deposit';
 
@@ -157,6 +166,34 @@ export default function CryptoPaymentModal({ isOpen, onClose, type }: CryptoPaym
   };
 
   const [generatedAddress] = useState(generateWalletAddress());
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const fetchPrices = async () => {
+      try {
+        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,tether,usd-coin,monero,litecoin&vs_currencies=usd');
+        const data = await response.json();
+        
+        if (data.bitcoin) {
+          setLivePrices({
+            btc: data.bitcoin.usd || 43500,
+            eth: data.ethereum.usd || 2580,
+            usdt: data.tether.usd || 1,
+            usdc: data['usd-coin'].usd || 1,
+            xmr: data.monero.usd || 145,
+            ltc: data.litecoin.usd || 72,
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch live crypto prices:', error);
+      }
+    };
+
+    fetchPrices();
+    const priceInterval = setInterval(fetchPrices, 60000); // refresh every 60s
+    return () => clearInterval(priceInterval);
+  }, [isOpen]);
 
   useEffect(() => {
     let interval: any;
@@ -271,16 +308,8 @@ export default function CryptoPaymentModal({ isOpen, onClose, type }: CryptoPaym
   };
 
   const getUsdEquivalent = () => {
-    const prices: Record<string, number> = {
-      btc: 43500,
-      eth: 2580,
-      usdt: 1,
-      usdc: 1,
-      xmr: 145,
-      ltc: 72,
-    };
     const cryptoAmount = parseFloat(amount) || 0;
-    return (cryptoAmount * prices[selectedCrypto.id]).toFixed(2);
+    return (cryptoAmount * (livePrices[selectedCrypto.id] || 1)).toFixed(2);
   };
 
   return (

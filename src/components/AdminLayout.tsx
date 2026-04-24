@@ -8,7 +8,8 @@ import {
   ShieldCheck,
   Menu,
   X,
-  History
+  History,
+  Briefcase
 } from 'lucide-react';
 import { Button } from './ui/button';
 
@@ -33,6 +34,7 @@ export default function AdminLayout() {
     { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
     { name: 'User Management', path: '/admin/users', icon: Users },
     { name: 'Transactions', path: '/admin/transactions', icon: History },
+    { name: 'Investments', path: '/admin/investments', icon: Briefcase },
   ];
 
   return (

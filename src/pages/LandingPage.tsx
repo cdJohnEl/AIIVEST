@@ -5,7 +5,6 @@ import StrategySection from '../sections/StrategySection';
 import DashboardPreviewSection from '../sections/DashboardPreviewSection';
 import SecuritySection from '../sections/SecuritySection';
 import PricingSection from '../sections/PricingSection';
-import BlogSection from '../sections/BlogSection';
 import CTASection from '../sections/CTASection';
 
 export default function LandingPage() {
@@ -18,7 +17,6 @@ export default function LandingPage() {
       <DashboardPreviewSection />
       <SecuritySection />
       <PricingSection />
-      <BlogSection />
       <CTASection />
     </main>
   );

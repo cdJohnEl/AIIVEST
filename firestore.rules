@@ -1,0 +1,65 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper function to check if the current user is an Admin
+    function isAdmin() {
+      return request.auth != null && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Ensure the user is authenticated 
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // USER PROFILES
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if request.auth.uid == userId || isAdmin();
+    }
+
+    // PORTFOLIOS
+    match /portfolios/{userId} {
+      // Users can read their own portfolio, Admins can read all
+      allow read: if request.auth.uid == userId || isAdmin();
+      
+      // CRITICAL SECURITY RULE:
+      // Only Admins can manually update portfolio balances. 
+      // Users must go through the "Pending Investment" Admin-Approval flow.
+      allow write: if isAdmin();
+    }
+
+    // INVESTMENTS 
+    match /investments/{investmentId} {
+      allow read: if request.auth.uid == resource.data.userId || isAdmin();
+      
+      // Users can create investments, but they cannot legally bypass
+      // setting the status to 'pending' unless they are an admin.
+      allow create: if request.auth.uid == request.resource.data.userId &&
+                       (request.resource.data.status == 'pending' || isAdmin());
+                       
+      // Users cannot update or delete. Only admins can update the status/details.
+      allow update, delete: if isAdmin();
+    }
+
+    // TRANSACTIONS (Deposits/Withdrawals)
+    match /transactions/{transactionId} {
+      allow read: if request.auth.uid == resource.data.userId || isAdmin();
+      
+      allow create: if request.auth.uid == request.resource.data.userId &&
+                       (request.resource.data.status == 'pending' || 
+                        request.resource.data.status == 'detected' || 
+                        isAdmin());
+                        
+      allow update, delete: if isAdmin();
+    }
+
+    // BLOG POSTS (Public Read, Admin Write)
+    match /blog/{postId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}
