@@ -272,6 +272,9 @@ export default function Dashboard() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {txLoading ? (
+            <>{[...Array(4)].map((_, i) => <StatCardSkeleton key={i} />)}</>
+          ) : (<>
           <StatCard
             title="Portfolio Value"
             value={`$${liveValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
@@ -302,6 +305,7 @@ export default function Dashboard() {
             positive={liveDaily >= 0}
             icon={Activity}
           />
+          </>)}
         </div>
 
         {/* Main Content Grid */}
