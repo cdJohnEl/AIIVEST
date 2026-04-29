@@ -139,7 +139,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error('[AuthContext] Failed to auto-subscribe (non-blocking):', err);
       }
 
-      const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`;
+      const gender = extendedData?.gender || 'Other';
+      const avatarSeed = gender === 'Male' ? `male_${email}` : (gender === 'Female' ? `female_${email}` : `user_${email}`);
+      const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`;
       const newReferralCode = generateReferralCode();
       let referredBy = '';
 
