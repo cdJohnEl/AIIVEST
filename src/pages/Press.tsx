@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 const pressReleases = [
   {
     date: 'December 15, 2024',
-    title: 'AI Invest Pro Surpasses $2.4 Billion in Assets Under Management',
+    title: 'NexusFinPro Surpasses $2.4 Billion in Assets Under Management',
     summary: 'Continued growth driven by AI-powered investment strategies and expanding global user base.',
     category: 'Company News',
   },
@@ -23,7 +23,7 @@ const pressReleases = [
   },
   {
     date: 'October 10, 2024',
-    title: 'AI Invest Pro Expands to 180 Countries',
+    title: 'NexusFinPro Expands to 180 Countries',
     summary: 'Global expansion brings AI-powered wealth management to investors worldwide.',
     category: 'Expansion',
   },
@@ -69,7 +69,7 @@ export default function Press() {
             Press & <span className="text-gradient">Media</span>
           </h1>
           <p className="text-xl text-[#A7B1C8] max-w-2xl mx-auto">
-            Latest news, press releases, and media resources about AI Invest Pro.
+            Latest news, press releases, and media resources about NexusFinPro.
           </p>
         </div>
 

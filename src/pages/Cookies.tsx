@@ -48,7 +48,7 @@ export default function Cookies() {
         {/* Introduction */}
         <div className="glass-card p-6 mb-8">
           <p className="text-[#A7B1C8] leading-relaxed">
-            This Cookie Policy explains how AI Invest Pro uses cookies and similar technologies 
+            This Cookie Policy explains how NexusFinPro uses cookies and similar technologies 
             to recognize you when you visit our platform. It explains what these technologies are 
             and why we use them, as well as your rights to control our use of them.
           </p>

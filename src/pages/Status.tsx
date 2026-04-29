@@ -114,7 +114,7 @@ export default function Status() {
             System Status
           </h1>
           <p className="text-xl text-[#A7B1C8]">
-            Real-time status of AI Invest Pro services
+            Real-time status of NexusFinPro services
           </p>
         </div>
 

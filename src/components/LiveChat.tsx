@@ -4,7 +4,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { generateChatCompletion } from '../lib/groq';
 
-const SYSTEM_PROMPT = `You are the AIVEST AI Support Assistant. AIVEST is a premium, AI-powered crypto investment platform.
+const SYSTEM_PROMPT = `You are the NexusFinPro AI Support Assistant. NexusFinPro is a premium, AI-powered crypto investment platform.
 Your goals:
 1. Help users understand our investment plans (Starter, Pro, Elite).
 2. Answer questions about deposits (BTC, ETH, USDT, and anonymous options like MixBTC/Tornado Cash).
@@ -27,7 +27,7 @@ export function LiveChat() {
   const [isMinimized, setIsMinimized] = useState(false);
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { id: 1, text: "Hi there! 👋 I'm the AIVEST AI Assistant. How can I help you optimize your portfolio today?", sender: 'bot', timestamp: new Date() },
+    { id: 1, text: "Hi there! 👋 I'm the NexusFinPro AI Assistant. How can I help you optimize your portfolio today?", sender: 'bot', timestamp: new Date() },
   ]);
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -115,7 +115,7 @@ export function LiveChat() {
             <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-[#0D1220]"></span>
           </div>
           <div>
-            <h3 className="text-white font-semibold text-sm">AIVEST Support</h3>
+            <h3 className="text-white font-semibold text-sm">NexusFinPro Support</h3>
             <p className="text-[10px] text-green-500">Online & Ready to Help</p>
           </div>
         </div>

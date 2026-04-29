@@ -5,8 +5,9 @@ import {
   createUserWithEmailAndPassword,
   signOut,
 } from 'firebase/auth';
-import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
+import { sendEmail } from '../lib/emailService';
 
 interface User {
   id: string;
@@ -77,53 +78,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             referredBy: userData.referredBy,
           });
         } else {
-          // Fallback to Auth displayName if Firestore isn't ready, but avoid email prefix
-          const fallbackName = firebaseUser.displayName || 'User';
-          console.log('AuthContext: Profile missing in Firestore, using fallback name:', fallbackName);
-          
-          setUser({
-            id: firebaseUser.uid,
-            name: fallbackName,
-            email: firebaseUser.email || '',
-            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${firebaseUser.email}`,
-            role: 'user',
-          });
-
-          // Self-heal: Create missing user and portfolio documents for broken registrations
-          const healAccount = async () => {
-            try {
-              const { setDoc, doc, serverTimestamp } = await import('firebase/firestore');
-              
-              await setDoc(doc(db, 'users', firebaseUser.uid), {
-                 name: fallbackName,
-                 email: firebaseUser.email,
-                 role: 'user',
-                 avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${firebaseUser.email}`,
-                 createdAt: serverTimestamp(),
-                 referralCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
-                 referredBy: ''
-              }, { merge: true });
-
-              await setDoc(doc(db, 'portfolios', firebaseUser.uid), {
-                 totalInvested: 0,
-                 totalReturns: 0,
-                 dailyReturns: 0,
-                 totalProfit: 0,
-                 monthlyProfit: 0,
-                 activeInvestments: 0,
-                 availableBalance: 0,
-                 lastUpdated: serverTimestamp()
-              }, { merge: true });
-              console.log('AuthContext: Successfully healed missing user profile and portfolio');
-            } catch (err) {
-              console.error('AuthContext: Failed to heal missing profile', err);
-            }
-          };
-          healAccount();
+          // Profile missing in Firestore, the main register function will create it.
+          // We set a minimal user here to avoid "loading" forever if the doc is truly missing
+          // but we no longer "auto-heal" here to avoid permission loops.
+          console.warn('AuthContext: Profile missing in Firestore for', firebaseUser.uid);
         }
         setLoading(false);
       }, (error) => {
-        console.error('AuthContext: Profile snapshot error:', error);
+        console.error('AuthContext: Profile snapshot error (likely permissions during registration):', error);
         setLoading(false);
       });
 
@@ -145,7 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const generateReferralCode = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let code = 'AIVEST-';
+    let code = 'NEXUS-';
     for (let i = 0; i < 6; i++) {
       code += chars.charAt(Math.floor(Math.random() * chars.length));
     }
@@ -214,7 +176,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                           amount: 50,
                           currency: 'USD',
                           status: 'confirmed',
-                          toAddress: 'AIVEST Referral System',
+                          toAddress: 'NexusFinPro Referral System',
                           confirmations: 6,
                           createdAt: new Date().toISOString()
                       });
@@ -239,7 +201,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email,
           avatar,
           role: 'user',
-          createdAt: new Date().toISOString(),
+          createdAt: serverTimestamp(),
           referralCode: newReferralCode,
           referredBy: referredBy,
           ...(extendedData || {})
@@ -263,6 +225,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         referredBy: referredBy,
         ...(extendedData || {})
       };
+
+      // Send welcome email IMMEDIATELY after document creation
+      // This ensures it dispatches before the redirect triggered by setUser(newUser)
+      try {
+        console.log('[AuthContext] Dispatching welcome email...');
+        await sendEmail('welcome', {
+          to_name: name,
+          to_email: email,
+          platform_name: 'NexusFinPro',
+        });
+      } catch (err) {
+        console.error('[AuthContext] Welcome email failed (non-blocking):', err);
+      }
 
       setUser(newUser);
       return true;

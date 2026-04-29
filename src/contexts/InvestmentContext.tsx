@@ -6,7 +6,6 @@ import {
   onSnapshot, 
   doc, 
   updateDoc,
-  setDoc,
   runTransaction
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -168,14 +167,7 @@ export function InvestmentProvider({ children }: { children: React.ReactNode }) 
         console.log('InvestmentContext: Portfolio data received');
         setPortfolio(docSnap.data() as Portfolio);
       } else {
-        console.log('InvestmentContext: Portfolio does not exist, creating default');
-        setDoc(portfolioRef, {
-          totalInvested: 0,
-          totalReturns: 0,
-          dailyReturns: 0,
-          activeInvestments: 0,
-          availableBalance: 0,
-        }).catch(err => console.error('InvestmentContext: Error initializing portfolio:', err));
+        console.log('InvestmentContext: Portfolio does not exist yet (waiting for registration sync)');
       }
     }, (error) => {
       console.error('InvestmentContext: Portfolio snapshot error:', error);

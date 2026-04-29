@@ -94,7 +94,7 @@ export default function CTASection() {
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#2D6BFF] to-[#1a4fd1] flex items-center justify-center">
                   <TrendingUp className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-[#F4F6FF] font-semibold">AI Invest Pro</span>
+                <span className="text-[#F4F6FF] font-semibold">NexusFinPro</span>
               </Link>
               <p className="text-sm text-[#8B95A8] mb-6 max-w-xs">
                 AI-powered investment platform for modern investors. Build wealth smarter with automated portfolios.
@@ -143,7 +143,7 @@ export default function CTASection() {
           {/* Bottom Bar */}
           <div className="py-6 border-t border-white/[0.06] flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-[#5A6578]">
-              © 2024 AI Invest Pro. All rights reserved.
+              © 2024 NexusFinPro. All rights reserved.
             </p>
             <div className="flex items-center gap-6">
               <Link to="/privacy" className="text-sm text-[#5A6578] hover:text-[#F4F6FF] transition-colors">

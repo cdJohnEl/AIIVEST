@@ -91,7 +91,7 @@ export default function HelpCenter() {
             Help Center
           </h1>
           <p className="text-xl text-[#A7B1C8] max-w-2xl mx-auto">
-            Find answers to your questions and learn how to make the most of AI Invest Pro.
+            Find answers to your questions and learn how to make the most of NexusFinPro.
           </p>
         </div>
 

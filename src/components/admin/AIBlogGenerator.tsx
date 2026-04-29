@@ -54,7 +54,7 @@ export function AIBlogGenerator() {
     console.log('[AIBlogGenerator] Starting generation for topic:', topic);
     setIsGenerating(true);
     try {
-      const prompt = `Write a comprehensive, professional investment blog post for "AI Invest Pro".
+      const prompt = `Write a comprehensive, professional investment blog post for "NexusFinPro".
       Theme: ${topic}
       Format: JSON { title, excerpt, content, category }
       Content: Markdown format, at least 800 words, expert analysis, data-driven, professional tone.
@@ -88,7 +88,7 @@ export function AIBlogGenerator() {
       console.log('[AIBlogGenerator] Saving to Firestore...');
       await addDoc(collection(db, 'blogs'), {
         ...data,
-        author: 'AIVEST Strategy Bot',
+        author: 'NexusFinPro Strategy Bot',
         date: serverTimestamp(),
         image: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=2832&auto=format&fit=crop',
       });

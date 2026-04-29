@@ -48,9 +48,9 @@ export default function Login() {
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center space-x-2 mb-6">
             <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#2D6BFF] to-[#1a4fd1] flex items-center justify-center">
-              <span className="text-white font-bold">AI</span>
+              <span className="text-white font-bold text-xs">NF</span>
             </div>
-            <span className="text-[#F4F6FF] font-semibold text-xl">Invest Pro</span>
+            <span className="text-[#F4F6FF] font-semibold text-xl">NexusFinPro</span>
           </Link>
           <h1 className="text-3xl font-bold text-[#F4F6FF] mb-2">Welcome back</h1>
           <p className="text-[#A7B1C8]">Sign in to access your portfolio</p>

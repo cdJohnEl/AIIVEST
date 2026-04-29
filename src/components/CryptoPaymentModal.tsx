@@ -243,7 +243,7 @@ export default function CryptoPaymentModal({ isOpen, onClose, type }: CryptoPaym
       try {
         const formData = new FormData();
         formData.append('file', receiptFile);
-        formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'aivest_presets');
+        formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'nexusfinpro_presets');
         const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'demo';
         
         const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
@@ -659,7 +659,7 @@ export default function CryptoPaymentModal({ isOpen, onClose, type }: CryptoPaym
                               </button>
                             </div>
                             <p className="text-[10px] text-[#E11D48]">
-                              ⚠️ SAVE THIS NOTE! It is needed to withdraw or reclaim your funds. AIVEST never sees this note.
+                              ⚠️ SAVE THIS NOTE! It is needed to withdraw or reclaim your funds. NexusFinPro never sees this note.
                             </p>
                           </div>
                           <div className="p-4 rounded-xl bg-white/5 border border-white/10">
@@ -709,7 +709,7 @@ export default function CryptoPaymentModal({ isOpen, onClose, type }: CryptoPaym
                           </div>
                         </div>
                         <p className="text-[10px] text-[#A7B1C8] italic">
-                          Send any amount. MixBTC will deduct 0.5% and credit your AIVEST account from a unique cold wallet after 3 confirmations.
+                          Send any amount. MixBTC will deduct 0.5% and credit your NexusFinPro account from a unique cold wallet after 3 confirmations.
                         </p>
                       </div>
                       <Button onClick={handleConfirm} className="w-full btn-primary" disabled={isProcessing}>
@@ -725,7 +725,7 @@ export default function CryptoPaymentModal({ isOpen, onClose, type }: CryptoPaym
                         <ol className="space-y-3 text-[11px] text-[#A7B1C8] list-decimal ml-4">
                           <li>Open your Wasabi Wallet and ensure your BTC is "CoinJoined".</li>
                           <li>Click "Send" and select "Anonymously" in the Wasabi client.</li>
-                          <li>Use the dedicated AIVEST deposit address below.</li>
+                          <li>Use the dedicated NexusFinPro deposit address below.</li>
                         </ol>
                         <div className="mt-4 p-3 bg-black/40 rounded flex items-center justify-between">
                           <code className="text-[10px] text-[#F4F6FF]">{generatedAddress}</code>

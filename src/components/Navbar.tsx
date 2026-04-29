@@ -54,8 +54,8 @@ export default function Navbar() {
               <TrendingUp className="w-5 h-5 text-white" />
             </div>
             <div>
-              <span className="text-[#F4F6FF] font-semibold text-lg tracking-tight">AI Invest</span>
-              <span className="text-[#2D6BFF] font-semibold text-lg">Pro</span>
+              <span className="text-[#F4F6FF] font-semibold text-lg tracking-tight">Nexus</span>
+              <span className="text-[#2D6BFF] font-semibold text-lg">FinPro</span>
             </div>
           </Link>
 

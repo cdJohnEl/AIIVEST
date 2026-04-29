@@ -26,7 +26,7 @@ export default function Terms() {
                 Important Notice
               </h2>
               <p className="text-[#A7B1C8] text-sm leading-relaxed">
-                By accessing or using AI Invest Pro, you agree to be bound by these Terms of Service. 
+                By accessing or using NexusFinPro, you agree to be bound by these Terms of Service. 
                 If you do not agree to these terms, please do not use our platform. Investing involves 
                 risk, including the possible loss of principal.
               </p>
@@ -52,7 +52,7 @@ export default function Terms() {
           <section className="glass-card p-6">
             <h2 className="text-xl font-semibold text-[#F4F6FF] mb-4">2. Investment Services</h2>
             <p className="text-[#A7B1C8] mb-4">
-              AI Invest Pro provides AI-powered portfolio management services. You acknowledge that:
+              NexusFinPro provides AI-powered portfolio management services. You acknowledge that:
             </p>
             <ul className="space-y-2 text-[#A7B1C8]">
               <li>• All investments carry risk and may result in loss</li>
@@ -92,7 +92,7 @@ export default function Terms() {
           <section className="glass-card p-6">
             <h2 className="text-xl font-semibold text-[#F4F6FF] mb-4">5. Limitation of Liability</h2>
             <p className="text-[#A7B1C8] leading-relaxed">
-              AI Invest Pro and its affiliates shall not be liable for any indirect, incidental, special, 
+              NexusFinPro and its affiliates shall not be liable for any indirect, incidental, special, 
               consequential, or punitive damages, including loss of profits, data, or use, arising out of 
               or in connection with your use of the platform.
             </p>

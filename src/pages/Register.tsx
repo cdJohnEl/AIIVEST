@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { sendEmail } from '../lib/emailService';
 
 export default function Register() {
   const [name, setName] = useState('');
@@ -72,13 +71,6 @@ export default function Register() {
       const success = await register(name, email, password, extendedData, referralCode);
       if (!success) {
         setError('Registration failed. Please try again.');
-      } else {
-        // Send welcome email
-        await sendEmail('welcome', {
-          to_name: name,
-          to_email: email,
-          platform_name: 'AIVEST',
-        });
       }
     } catch {
       setError('An error occurred. Please try again.');
@@ -100,9 +92,9 @@ export default function Register() {
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center space-x-2 mb-6">
             <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#2D6BFF] to-[#1a4fd1] flex items-center justify-center">
-              <span className="text-white font-bold">AI</span>
+              <span className="text-white font-bold text-xs">NF</span>
             </div>
-            <span className="text-[#F4F6FF] font-semibold text-xl">Invest Pro</span>
+            <span className="text-[#F4F6FF] font-semibold text-xl">NexusFinPro</span>
           </Link>
           <h1 className="text-3xl font-bold text-[#F4F6FF] mb-2">Create your account</h1>
           <p className="text-[#A7B1C8]">Start your investment journey today</p>
@@ -168,7 +160,20 @@ export default function Register() {
                   id="dob"
                   type="date"
                   value={dob}
-                  onChange={(e) => setDob(e.target.value)}
+                  onChange={(e) => {
+                    const newDob = e.target.value;
+                    setDob(newDob);
+                    if (newDob) {
+                      const birthDate = new Date(newDob);
+                      const today = new Date();
+                      let calculatedAge = today.getFullYear() - birthDate.getFullYear();
+                      const m = today.getMonth() - birthDate.getMonth();
+                      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                        calculatedAge--;
+                      }
+                      setAge(calculatedAge.toString());
+                    }
+                  }}
                   className="bg-white/5 border-white/10 text-[#F4F6FF] [&::-webkit-calendar-picker-indicator]:filter-[invert(1)] focus:border-[#2D6BFF] focus:ring-[#2D6BFF]/20"
                   required
                 />
@@ -265,7 +270,7 @@ export default function Register() {
               <Input
                 id="referralCode"
                 type="text"
-                placeholder="e.g. AIVEST-A1B2C3"
+                placeholder="e.g. NEXUS-A1B2C3"
                 value={referralCode}
                 onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
                 className="bg-white/5 border-white/10 text-[#F4F6FF] placeholder:text-[#A7B1C8]/50 focus:border-[#2D6BFF] focus:ring-[#2D6BFF]/20 font-mono tracking-widest uppercase"

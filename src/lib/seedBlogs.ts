@@ -21,7 +21,7 @@ async function seedBlogs() {
     for (const theme of themes) {
       try {
         console.log(`Generating AI insight for theme: ${theme}...`);
-        const prompt = `Write a comprehensive, professional investment blog post for "AI Invest Pro".
+        const prompt = `Write a comprehensive, professional investment blog post for "NexusFinPro".
         Theme: ${theme}
         Format: JSON { title, excerpt, content, category }
         Content: Markdown format, at least 600 words, expert analysis, data-driven.
@@ -37,7 +37,7 @@ async function seedBlogs() {
         
         await addDoc(collection(db, 'blogs'), {
           ...data,
-          author: 'AIVEST Strategy Bot',
+          author: 'NexusFinPro Strategy Bot',
           date: serverTimestamp(),
           image: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=2832&auto=format&fit=crop',
         });

@@ -88,7 +88,6 @@ function resolveTemplate(template: EmailTemplate, params: EmailParams): {
 
 /**
  * Send a transactional email via EmailJS.
- * Silently no-ops if credentials are not configured.
  */
 export async function sendEmail(
   template: EmailTemplate,
@@ -96,15 +95,32 @@ export async function sendEmail(
 ): Promise<void> {
   const { templateId, payload } = resolveTemplate(template, params);
 
+  // Debug check for local environment
+  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
   if (!SERVICE_ID || !PUBLIC_KEY || !templateId) {
-    console.warn(`[EmailService] Skipping — EmailJS not configured (template: "${template}")`);
+    const errorMsg = `[EmailService] ⚠️ Configuration Missing: ${!SERVICE_ID ? 'Service ID ' : ''}${!PUBLIC_KEY ? 'Public Key ' : ''}${!templateId ? 'Template ID ' : ''}`;
+    console.warn(errorMsg);
+    if (isLocal) alert(errorMsg + "\n\nEnsure your .env file is correct and you have RESTARTED the terminal (npm run dev).");
     return;
   }
 
   try {
-    await emailjs.send(SERVICE_ID, templateId, payload, PUBLIC_KEY);
-    console.log(`[EmailService] ✉️ Sent "${template}" to ${params.to_email}`);
-  } catch (error) {
-    console.error(`[EmailService] Failed to send "${template}":`, error);
+    // Standard init + send pattern
+    emailjs.init(PUBLIC_KEY);
+    const response = await emailjs.send(SERVICE_ID, templateId, payload);
+    
+    console.log(`[EmailService] ✅ SUCCESS! Sent "${template}"`, response.status, response.text);
+    
+    if (isLocal) {
+        console.info("%cEmail successfully sent! Check your inbox/spam.", "color: #10B981; font-weight: bold;");
+    }
+  } catch (error: any) {
+    const errorDetail = error?.text || error?.message || JSON.stringify(error);
+    console.error(`[EmailService] ❌ FAILED to send "${template}":`, errorDetail);
+    
+    if (isLocal) {
+      alert(`EmailJS Error: ${errorDetail}\n\nCheck your EmailJS dashboard to ensure this Service/Template/Key is active.`);
+    }
   }
 }

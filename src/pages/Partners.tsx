@@ -154,7 +154,7 @@ export default function Partners() {
                 Earn Up to 30% Commission
               </h3>
               <p className="text-[#A7B1C8]">
-                Refer users to AI Invest Pro and earn recurring commissions on their investments.
+                Refer users to NexusFinPro and earn recurring commissions on their investments.
               </p>
             </div>
             <Link to="/affiliate-program">

@@ -48,7 +48,7 @@ export default function AffiliateProgram() {
             <Users className="w-10 h-10 text-[#10B981]" />
           </div>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[#F4F6FF] mb-6">
-            AIVEST <span className="text-[#10B981]">Affiliate Program</span>
+            NexusFinPro <span className="text-[#10B981]">Affiliate Program</span>
           </h1>
           <p className="text-xl text-[#A7B1C8] max-w-2xl mx-auto">
             Partner with the world's most advanced AI investment platform. 

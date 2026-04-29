@@ -41,7 +41,7 @@ const disclosures = [
   {
     icon: Scale,
     title: 'Regulatory Status',
-    content: 'AI Invest Pro is registered with relevant regulatory authorities. However, cryptocurrency investments are not insured by the FDIC or any government agency.',
+    content: 'NexusFinPro is registered with relevant regulatory authorities. However, cryptocurrency investments are not insured by the FDIC or any government agency.',
   },
   {
     icon: FileText,

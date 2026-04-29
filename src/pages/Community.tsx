@@ -44,7 +44,7 @@ const socialChannels = [
   {
     icon: MessageSquare,
     name: 'Discord',
-    handle: 'AI Invest Pro',
+    handle: 'NexusFinPro',
     followers: '45K',
     description: 'Deep dives, strategy discussions, and events',
     url: 'https://discord.gg/aiinvestpro',
@@ -53,7 +53,7 @@ const socialChannels = [
   {
     icon: Youtube,
     name: 'YouTube',
-    handle: 'AI Invest Pro',
+    handle: 'NexusFinPro',
     followers: '30K',
     description: 'Tutorials, webinars, and educational content',
     url: 'https://youtube.com/aiinvestpro',
@@ -130,7 +130,7 @@ export default function Community() {
           </h1>
           <p className="text-xl text-[#A7B1C8] max-w-2xl mx-auto">
             Connect with 50,000+ investors worldwide. Share strategies, get support, 
-            and stay updated on the latest from AI Invest Pro.
+            and stay updated on the latest from NexusFinPro.
           </p>
         </div>
 
@@ -226,7 +226,7 @@ export default function Community() {
                 <Zap className="w-8 h-8 text-[#10B981]" />
               </div>
               <h2 className="text-2xl font-bold text-[#F4F6FF] mb-2">You're on the list!</h2>
-              <p className="text-[#A7B1C8]">Thank you for subscribing to the AIVEST newsletter.</p>
+              <p className="text-[#A7B1C8]">Thank you for subscribing to the NexusFinPro newsletter.</p>
             </div>
           ) : (
             <>

@@ -73,7 +73,7 @@ const stats = [
 
 const testimonials = [
   {
-    quote: "AI Invest Pro changed how I think about wealth building. The privacy features mean I can invest without worrying about my data being sold.",
+    quote: "NexusFinPro changed how I think about wealth building. The privacy features mean I can invest without worrying about my data being sold.",
     author: "Marcus T.",
     role: "Software Engineer",
     location: "Berlin, Germany"
@@ -132,7 +132,7 @@ export default function About() {
             We're Building the <span className="text-gradient">Future of Wealth</span>
           </h1>
           <p className="text-xl text-[#A7B1C8] leading-relaxed">
-            AI Invest Pro was born from a simple belief: everyone deserves access to 
+            NexusFinPro was born from a simple belief: everyone deserves access to 
             sophisticated investment tools, complete privacy, and the freedom to build 
             wealth on their own terms.
           </p>

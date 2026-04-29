@@ -6,7 +6,7 @@ export const FALLBACK_BLOG_POSTS = [
     content: `
 # The AI Revolution in Personal Wealth Management
 
-The financial landscape is undergoing a seismic shift. For decades, institutional investors and hedge funds have held a significant advantage over individual investors, thanks to their access to high-frequency data, sophisticated algorithms, and vast teams of analysts. However, the rise of specialized AI investment platforms like **AI Invest Pro** is rapidly closing this gap.
+The financial landscape is undergoing a seismic shift. For decades, institutional investors and hedge funds have held a significant advantage over individual investors, thanks to their access to high-frequency data, sophisticated algorithms, and vast teams of analysts. However, the rise of specialized AI investment platforms like **NexusFinPro** is rapidly closing this gap.
 
 ## Democratizing Institutional Intelligence
 
@@ -32,7 +32,7 @@ As we move further into 2026, the question for investors is no longer *if* they 
     content: `
 # Navigating Volatility: A Data-Driven Approach
 
-Market volatility is often viewed through the lens of risk, but for the data-driven investor, it represents opportunity. At **AI Invest Pro**, our algorithms thrive on market movements, using them to rebalance and optimize for maximum return per unit of risk.
+Market volatility is often viewed through the lens of risk, but for the data-driven investor, it represents opportunity. At **NexusFinPro**, our algorithms thrive on market movements, using them to rebalance and optimize for maximum return per unit of risk.
 
 ## The Anatomy of a Market Correction
 

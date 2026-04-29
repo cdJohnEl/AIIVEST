@@ -22,13 +22,14 @@ service cloud.firestore {
 
     // PORTFOLIOS
     match /portfolios/{userId} {
-      // Users can read their own portfolio, Admins can read all
       allow read: if request.auth.uid == userId || isAdmin();
       
-      // CRITICAL SECURITY RULE:
-      // Only Admins can manually update portfolio balances. 
-      // Users must go through the "Pending Investment" Admin-Approval flow.
-      allow write: if isAdmin();
+      // Allow the user to create their initial portfolio during registration
+      allow create: if request.auth.uid == userId;
+      
+      // Only Admins can update balances or returns
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
     // INVESTMENTS 

@@ -67,7 +67,7 @@ export default function Privacy() {
         {/* Introduction */}
         <div className="glass-card p-6 mb-8">
           <p className="text-[#A7B1C8] leading-relaxed">
-            At AI Invest Pro, we take your privacy seriously. This Privacy Policy explains how we collect, 
+            At NexusFinPro, we take your privacy seriously. This Privacy Policy explains how we collect, 
             use, store, and protect your personal information. By using our platform, you agree to the 
             practices described in this policy.
           </p>
