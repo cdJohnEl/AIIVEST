@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { sendEmail } from '../../lib/emailService';
+import { sendNotificationEmail } from '../../lib/emailService';
 
 // Skeleton shimmer
 function Skeleton({ className = '' }: { className?: string }) {
@@ -144,18 +144,18 @@ export default function TransactionManagement() {
 
       toast.success('Transaction manually approved and balance updated');
 
-      // Email notification based on transaction type
+      // Email notification via Resend (server-side)
       import('firebase/firestore').then(({ getDoc, doc: fdoc }) => {
         getDoc(fdoc(db, 'users', tx.userId)).then(userSnap => {
           if (userSnap.exists()) {
             const userData = userSnap.data();
-            const template = tx.type === 'deposit' ? 'deposit_approved' : 'withdrawal_approved';
-            sendEmail(template, {
-              to_name: userData.name || tx.userName || 'User',
-              to_email: userData.email || '',
+            const emailType = tx.type === 'deposit' ? 'deposit_approved' as const : 'withdrawal_approved' as const;
+            sendNotificationEmail({
+              toName: userData.name || tx.userName || 'User',
+              toEmail: userData.email || '',
+              emailType,
               amount: `$${tx.amount.toLocaleString()}`,
               currency: tx.currency,
-              transaction_type: tx.type === 'deposit' ? 'Deposit' : 'Withdrawal',
             });
           }
         });

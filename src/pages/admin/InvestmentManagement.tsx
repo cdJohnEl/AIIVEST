@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { sendEmail } from '../../lib/emailService';
+import { sendNotificationEmail } from '../../lib/emailService';
 
 // Skeleton shimmer
 function Skeleton({ className = '' }: { className?: string }) {
@@ -122,19 +122,18 @@ export default function InvestmentManagement() {
 
       toast.success('Investment approved successfully. Balance deducted.');
 
-      // Notify the user via email
-      // We need to fetch the user email from Firestore or rely on userId
-      // For now, we fetch from the users collection inside the transaction
+      // Notify the user via Resend (server-side)
       import('firebase/firestore').then(({ getDoc, doc: fdoc }) => {
         getDoc(fdoc(db, 'users', inv.userId)).then(userSnap => {
           if (userSnap.exists()) {
             const userData = userSnap.data();
-            sendEmail('investment_activated', {
-              to_name: userData.name || inv.userName || 'Investor',
-              to_email: userData.email || '',
-              plan_name: inv.planName,
+            sendNotificationEmail({
+              toName: userData.name || inv.userName || 'Investor',
+              toEmail: userData.email || '',
+              emailType: 'investment_activated',
+              planName: inv.planName,
+              dailyReturn: `$${inv.dailyReturn.toFixed(2)}`,
               amount: `$${inv.amount.toLocaleString()}`,
-              daily_return: `$${inv.dailyReturn.toFixed(2)}`,
             });
           }
         });

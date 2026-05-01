@@ -7,7 +7,7 @@ import {
 } from 'firebase/auth';
 import { doc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
-import { sendEmail } from '../lib/emailService';
+import { sendWelcomeEmail } from '../lib/emailService';
 
 interface User {
   id: string;
@@ -119,11 +119,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
 
-      // Also update the Auth profile as a backup
-      const { updateProfile, sendEmailVerification } = await import('firebase/auth');
-      await sendEmailVerification(firebaseUser);
-      console.log('[AuthContext] Verification email sent to:', email);
-      
+      // Update the Auth profile display name
+      const { updateProfile } = await import('firebase/auth');
       await updateProfile(firebaseUser, { displayName: name });
 
       // Automatically subscribe to newsletter
@@ -228,17 +225,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ...(extendedData || {})
       };
 
-      // Send welcome email IMMEDIATELY after document creation
-      // This ensures it dispatches before the redirect triggered by setUser(newUser)
+      // Send branded emails via Resend
       try {
-        console.log('[AuthContext] Dispatching welcome email...');
-        await sendEmail('welcome', {
-          to_name: name,
-          to_email: email,
-          platform_name: 'NexusFinPro',
-        });
+        console.log('[AuthContext] Dispatching emails via Resend...');
+        // Send welcome email immediately (verification handled by Firebase Auth link in the template)
+        await sendWelcomeEmail(name, email);
       } catch (err) {
-        console.error('[AuthContext] Welcome email failed (non-blocking):', err);
+        console.error('[AuthContext] Email dispatch failed (non-blocking):', err);
       }
 
       setUser(newUser);
