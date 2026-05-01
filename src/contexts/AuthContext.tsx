@@ -7,7 +7,7 @@ import {
 } from 'firebase/auth';
 import { doc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
-import { sendWelcomeEmail } from '../lib/emailService';
+import { sendVerificationEmail } from '../lib/emailService';
 
 interface User {
   id: string;
@@ -25,14 +25,15 @@ interface User {
   occupation?: string;
   referralCode?: string;
   referredBy?: string;
+  isVerified?: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   loading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
-  register: (name: string, email: string, password: string, extendedData?: any, referralCodeFromInput?: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{success: boolean, error?: string}>;
+  register: (name: string, email: string, password: string, extendedData?: any, referralCodeFromInput?: string) => Promise<{success: boolean, error?: string}>;
   logout: () => Promise<void>;
 }
 
@@ -76,6 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             occupation: userData.occupation,
             referralCode: userData.referralCode,
             referredBy: userData.referredBy,
+            isVerified: userData.isVerified !== false, // Default to true for old users
           });
         } else {
           // Profile missing in Firestore, the main register function will create it.
@@ -95,13 +97,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<{success: boolean, error?: string}> => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      return true;
-    } catch (error) {
+      return { success: true };
+    } catch (error: any) {
       console.error('Login error:', error);
-      return false;
+      return { success: false, error: 'Invalid email or password.' };
     }
   };
 
@@ -114,7 +116,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return code;
   };
 
-  const register = async (name: string, email: string, password: string, extendedData?: any, referralCodeFromInput?: string): Promise<boolean> => {
+  const generateVerificationToken = () => {
+    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  };
+
+  const register = async (name: string, email: string, password: string, extendedData?: any, referralCodeFromInput?: string): Promise<{success: boolean, error?: string}> => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
@@ -140,6 +146,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const avatarSeed = gender === 'Male' ? `male_${email}` : (gender === 'Female' ? `female_${email}` : `user_${email}`);
       const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`;
       const newReferralCode = generateReferralCode();
+      const verificationToken = generateVerificationToken();
       let referredBy = '';
 
       // Check if referred by someone
@@ -203,6 +210,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           createdAt: serverTimestamp(),
           referralCode: newReferralCode,
           referredBy: referredBy,
+          isVerified: false,
+          verificationToken: verificationToken,
           ...(extendedData || {})
         }),
         setDoc(portfolioDocRef, {
@@ -214,6 +223,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         })
       ]);
 
+      // Generate the custom NexusFinPro URL, NO Firebase domain
+      // Uses the current origin (localhost for testing, nexusfinpro.com for prod)
+      const dynamicOrigin = window.location.origin;
+      const customVerificationLink = `${dynamicOrigin}/verify?token=${verificationToken}&uid=${firebaseUser.uid}`;
+
       const newUser: User = {
         id: firebaseUser.uid,
         name,
@@ -222,23 +236,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         role: 'user',
         referralCode: newReferralCode,
         referredBy: referredBy,
+        isVerified: false,
+        classification: 'Starter', // Using default
         ...(extendedData || {})
       };
 
-      // Send branded emails via Resend
+      // Send branded verification email via Resend completely skipping Firebase Admin links
       try {
-        console.log('[AuthContext] Dispatching emails via Resend...');
-        // Send welcome email immediately (verification handled by Firebase Auth link in the template)
-        await sendWelcomeEmail(name, email);
+        console.log('[AuthContext] Dispatching fully custom verification email via Resend...');
+        await sendVerificationEmail(name, email, customVerificationLink);
       } catch (err) {
-        console.error('[AuthContext] Email dispatch failed (non-blocking):', err);
+        console.error('[AuthContext] Verification email dispatch failed:', err);
       }
 
       setUser(newUser);
-      return true;
-    } catch (error) {
+      return { success: true };
+    } catch (error: any) {
       console.error('Registration error:', error);
-      return false;
+      if (error.code === 'auth/email-already-in-use') {
+        return { success: false, error: 'This email is already registered. Please log in instead.' };
+      }
+      return { success: false, error: error.message || 'Registration failed. Please try again.' };
     }
   };
 

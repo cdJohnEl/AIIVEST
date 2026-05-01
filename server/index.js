@@ -110,7 +110,13 @@ app.post('/api/emails/send', async (req, res) => {
       case 'verification':
         from = "Security <security@nexusfinpro.com>";
         subject = "Verify your NexusFinPro Account";
-        html = verificationEmailHtml(payload.name, payload.verificationLink);
+        
+        let link = payload.verificationLink;
+        if (!link) {
+           return res.status(400).json({ error: "Missing verificationLink" });
+        }
+        
+        html = verificationEmailHtml(payload.name, link);
         break;
 
       case 'welcome':

@@ -8,6 +8,7 @@ import BlogPost from './pages/BlogPost';
 import InvestmentPlans from './pages/InvestmentPlans';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Verify from './pages/Verify';
 import ForgotPassword from './pages/ForgotPassword';
 import Profile from './pages/Profile';
 import About from './pages/About';
@@ -106,6 +107,7 @@ function AppRoutes() {
         
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/verify" element={<Verify />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
         {/* Admin Routes */}

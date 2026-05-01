@@ -33,15 +33,15 @@ export default function Register() {
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  
   const navigate = useNavigate();
   const { register, isAuthenticated } = useAuth();
 
   useEffect(() => {
-    if (isAuthenticated) {
+    // Prevent redirecting if we are actively registering (isLoading)
+    if (isAuthenticated && !isLoading) {
       navigate('/dashboard', { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, isLoading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,12 +77,12 @@ export default function Register() {
         occupation
       };
       
-      const success = await register(name, email, password, extendedData, referralCode);
-      if (!success) {
-        setError('Registration failed. Please try again.');
+      const result = await register(name, email, password, extendedData, referralCode);
+      if (!result.success) {
+        setError(result.error || 'Registration failed. Please try again.');
       }
-    } catch {
-      setError('An error occurred. Please try again.');
+    } catch (err: any) {
+      setError(err.message || 'An error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
