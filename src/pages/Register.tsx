@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Country, State, City } from 'country-state-city';
 
 export default function Register() {
   const [name, setName] = useState('');
@@ -14,7 +15,14 @@ export default function Register() {
   const [dob, setDob] = useState('');
   const [age, setAge] = useState('');
   const [gender, setGender] = useState('');
+  
+  // Location States
   const [country, setCountry] = useState('');
+  const [countryCode, setCountryCode] = useState('');
+  
+  const [stateLoc, setStateLoc] = useState('');
+  const [stateCode, setStateCode] = useState('');
+  
   const [city, setCity] = useState('');
   const [address, setAddress] = useState('');
   const [occupation, setOccupation] = useState('');
@@ -63,6 +71,7 @@ export default function Register() {
         age: parseInt(age),
         gender,
         country,
+        state: stateLoc,
         city,
         address,
         occupation
@@ -84,6 +93,11 @@ export default function Register() {
     { label: 'Contains a number', met: /\d/.test(password) },
     { label: 'Contains a special character', met: /[!@#$%^&*]/.test(password) },
   ];
+
+  // Derived location data
+  const countries = Country.getAllCountries();
+  const states = countryCode ? State.getStatesOfCountry(countryCode) : [];
+  const cities = stateCode ? City.getCitiesOfState(countryCode, stateCode) : [];
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-20">
@@ -212,30 +226,83 @@ export default function Register() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="country" className="text-[#F4F6FF]">Country</Label>
-                <Input
+                <select
                   id="country"
-                  type="text"
-                  placeholder="United States"
-                  value={country}
-                  onChange={(e) => setCountry(e.target.value)}
-                  className="bg-white/5 border-white/10 text-[#F4F6FF] placeholder:text-[#A7B1C8]/50 focus:border-[#2D6BFF] focus:ring-[#2D6BFF]/20"
+                  value={countryCode}
+                  onChange={(e) => {
+                    setCountryCode(e.target.value);
+                    setCountry(countries.find(c => c.isoCode === e.target.value)?.name || '');
+                    setStateCode('');
+                    setStateLoc('');
+                    setCity('');
+                  }}
+                  className="flex h-10 w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-[#F4F6FF] focus:border-[#2D6BFF] focus:ring-1 focus:ring-[#2D6BFF]/20 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                   required
-                />
+                >
+                  <option value="" disabled className="bg-[#0D1220] text-[#A7B1C8]">Select country</option>
+                  {countries.map((c) => (
+                    <option key={c.isoCode} value={c.isoCode} className="bg-[#0D1220]">
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="city" className="text-[#F4F6FF]">City / State</Label>
-                <Input
-                  id="city"
-                  type="text"
-                  placeholder="New York, NY"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  className="bg-white/5 border-white/10 text-[#F4F6FF] placeholder:text-[#A7B1C8]/50 focus:border-[#2D6BFF] focus:ring-[#2D6BFF]/20"
+                <Label htmlFor="state" className="text-[#F4F6FF]">State / Region</Label>
+                <select
+                  id="state"
+                  value={stateCode}
+                  onChange={(e) => {
+                    setStateCode(e.target.value);
+                    setStateLoc(states.find(s => s.isoCode === e.target.value)?.name || '');
+                    setCity('');
+                  }}
+                  className="flex h-10 w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-[#F4F6FF] focus:border-[#2D6BFF] focus:ring-1 focus:ring-[#2D6BFF]/20 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                   required
-                />
+                  disabled={!countryCode || states.length === 0}
+                >
+                  <option value="" disabled className="bg-[#0D1220] text-[#A7B1C8]">Select state</option>
+                  {states.map((s) => (
+                    <option key={s.isoCode} value={s.isoCode} className="bg-[#0D1220]">
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="city" className="text-[#F4F6FF]">City</Label>
+                {cities.length > 0 ? (
+                  <select
+                    id="city"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-[#F4F6FF] focus:border-[#2D6BFF] focus:ring-1 focus:ring-[#2D6BFF]/20 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                    required
+                  >
+                    <option value="" disabled className="bg-[#0D1220] text-[#A7B1C8]">Select city</option>
+                    {cities.map((c) => (
+                      <option key={c.name} value={c.name} className="bg-[#0D1220]">
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <Input
+                    id="city"
+                    type="text"
+                    placeholder="Enter city"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    className="bg-white/5 border-white/10 text-[#F4F6FF] placeholder:text-[#A7B1C8]/50 focus:border-[#2D6BFF] focus:ring-[#2D6BFF]/20"
+                    required
+                    disabled={!stateCode}
+                  />
+                )}
               </div>
             </div>
 
