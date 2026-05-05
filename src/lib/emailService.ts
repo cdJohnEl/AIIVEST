@@ -9,7 +9,7 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
 
 async function sendToBackend(type: string, payload: any): Promise<void> {
   try {
-    const res = await fetch(`${BACKEND_URL}/api/emails/send`, {
+    const res = await fetch(`${BACKEND_URL}/api/send-email`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type, payload }),

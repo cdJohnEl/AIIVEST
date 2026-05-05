@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const { Resend } = require('resend');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -10,8 +10,25 @@ const port = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-// Initialize Resend
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Initialize Nodemailer Transporter
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: parseInt(process.env.SMTP_PORT),
+  secure: true, // true for 465, false for other ports
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
+
+// Verify connection configuration
+transporter.verify(function (error, success) {
+  if (error) {
+    console.error("SMTP Connection Error:", error);
+  } else {
+    console.log("Zoho SMTP Server is ready to take our messages");
+  }
+});
 
 // ─── HTML Templates ─────────────────────────────────────────────────────────
 
@@ -97,84 +114,87 @@ function notificationEmailHtml(name, title, message, label1, value1, label2, val
 
 // ─── API Routes ─────────────────────────────────────────────────────────────
 
-app.post('/api/emails/send', async (req, res) => {
+/**
+ * Handle different email types and return standardized payload for SMTP dispatch
+ */
+function prepareEmail(type, payload) {
+  let subject = "", html = "", from = '"NexusFinPro Support" <support@nexusfinpro.com>', to = payload.email || payload.toEmail;
+
+  if (!to) throw new Error("Missing recipient email");
+
+  switch (type) {
+    case 'verification':
+      subject = "Verify your NexusFinPro Account";
+      if (!payload.verificationLink) throw new Error("Missing verificationLink");
+      html = verificationEmailHtml(payload.name, payload.verificationLink);
+      break;
+
+    case 'welcome':
+      subject = "Welcome to the Future of Investing | NexusFinPro";
+      html = welcomeEmailHtml(payload.name);
+      break;
+
+    case 'deposit_approved':
+      subject = `Your deposit of ${payload.amount} has been confirmed`;
+      html = notificationEmailHtml(
+          payload.toName, 
+          "Deposit Confirmed! ✅", 
+          "your deposit has been reviewed and approved. Your available balance has been updated.",
+          "Amount", String(payload.amount), "Currency", String(payload.currency)
+      );
+      break;
+
+    case 'withdrawal_approved':
+      subject = `Your withdrawal of ${payload.amount} is being processed`;
+      html = notificationEmailHtml(
+          payload.toName, 
+          "Withdrawal Approved 💸", 
+          "your withdrawal request has been approved and is being processed to your wallet.",
+          "Amount", String(payload.amount), "Currency", String(payload.currency)
+      );
+      break;
+
+    case 'investment_activated':
+      subject = `Your ${payload.planName} investment is now active`;
+      html = notificationEmailHtml(
+          payload.toName, 
+          "Investment Activated! 📈", 
+          "your investment has been activated. Your AI portfolio is now working for you.",
+          "Plan", String(payload.planName), "Daily Return", String(payload.dailyReturn)
+      );
+      break;
+
+    default:
+      throw new Error("Invalid email type");
+  }
+
+  return { from, to, subject, html };
+}
+
+// Re-using the same logic for both endpoints to ensure consistency
+async function handleEmailRequest(req, res) {
   try {
     const { type, payload } = req.body;
-    let subject = "", html = "", from = "", to = payload.email || payload.toEmail;
+    const emailData = prepareEmail(type, payload);
 
-    if (!to) {
-      return res.status(400).json({ error: "Missing recipient email" });
-    }
-
-    switch (type) {
-      case 'verification':
-        from = "Security <security@nexusfinpro.com>";
-        subject = "Verify your NexusFinPro Account";
-        
-        let link = payload.verificationLink;
-        if (!link) {
-           return res.status(400).json({ error: "Missing verificationLink" });
-        }
-        
-        html = verificationEmailHtml(payload.name, link);
-        break;
-
-      case 'welcome':
-        from = "Support <support@nexusfinpro.com>";
-        subject = "Welcome to the Future of Investing | NexusFinPro";
-        html = welcomeEmailHtml(payload.name);
-        break;
-
-      case 'deposit_approved':
-        from = "NexusFinPro <support@nexusfinpro.com>";
-        subject = `Your deposit of ${payload.amount} has been confirmed`;
-        html = notificationEmailHtml(
-            payload.toName, 
-            "Deposit Confirmed! ✅", 
-            "your deposit has been reviewed and approved. Your available balance has been updated.",
-            "Amount", String(payload.amount), "Currency", String(payload.currency)
-        );
-        break;
-
-      case 'withdrawal_approved':
-        from = "NexusFinPro <support@nexusfinpro.com>";
-        subject = `Your withdrawal of ${payload.amount} is being processed`;
-        html = notificationEmailHtml(
-            payload.toName, 
-            "Withdrawal Approved 💸", 
-            "your withdrawal request has been approved and is being processed to your wallet.",
-            "Amount", String(payload.amount), "Currency", String(payload.currency)
-        );
-        break;
-
-      case 'investment_activated':
-        from = "NexusFinPro <onboarding@nexusfinpro.com>";
-        subject = `Your ${payload.planName} investment is now active`;
-        html = notificationEmailHtml(
-            payload.toName, 
-            "Investment Activated! 📈", 
-            "your investment has been activated. Your AI portfolio is now working for you.",
-            "Plan", String(payload.planName), "Daily Return", String(payload.dailyReturn)
-        );
-        break;
-
-      default:
-        return res.status(400).json({ error: "Invalid email type" });
-    }
-
-    const data = await resend.emails.send({
-      from,
-      to: [to],
-      subject,
-      html
+    const info = await transporter.sendMail({
+      from: emailData.from,
+      to: emailData.to,
+      subject: emailData.subject,
+      html: emailData.html
     });
 
-    res.status(200).json({ success: true, id: data.id });
+    console.log("Email sent successfully: %s", info.messageId);
+    res.status(200).json({ success: true, id: info.messageId });
   } catch (error) {
     console.error("Email Error:", error);
-    res.status(500).json({ error: error.message });
+    res.status(error.message.includes("recipient") || error.message.includes("type") ? 400 : 500)
+       .json({ error: error.message });
   }
-});
+}
+
+app.post('/api/emails/send', handleEmailRequest);
+app.post('/api/send-email', handleEmailRequest);
 
 // Start Server
 app.listen(port, () => {
