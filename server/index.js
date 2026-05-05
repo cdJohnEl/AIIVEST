@@ -126,7 +126,7 @@ app.post('/api/emails/send', async (req, res) => {
         break;
 
       case 'deposit_approved':
-        from = "NexusFinPro <notifications@nexusfinpro.com>";
+        from = "NexusFinPro <support@nexusfinpro.com>";
         subject = `Your deposit of ${payload.amount} has been confirmed`;
         html = notificationEmailHtml(
             payload.toName, 
@@ -137,7 +137,7 @@ app.post('/api/emails/send', async (req, res) => {
         break;
 
       case 'withdrawal_approved':
-        from = "NexusFinPro <notifications@nexusfinpro.com>";
+        from = "NexusFinPro <support@nexusfinpro.com>";
         subject = `Your withdrawal of ${payload.amount} is being processed`;
         html = notificationEmailHtml(
             payload.toName, 
@@ -148,7 +148,7 @@ app.post('/api/emails/send', async (req, res) => {
         break;
 
       case 'investment_activated':
-        from = "NexusFinPro <notifications@nexusfinpro.com>";
+        from = "NexusFinPro <onboarding@nexusfinpro.com>";
         subject = `Your ${payload.planName} investment is now active`;
         html = notificationEmailHtml(
             payload.toName, 

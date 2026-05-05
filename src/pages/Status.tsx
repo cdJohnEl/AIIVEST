@@ -201,7 +201,7 @@ export default function Status() {
             Get notified when incidents occur or are resolved.
           </p>
           <a 
-            href="mailto:status@aiinvestpro.com?subject=Subscribe to Status Updates"
+            href="mailto:info@nexusfinpro.com?subject=Subscribe to Status Updates"
             className="text-[#2D6BFF] hover:underline"
           >
             Subscribe via Email

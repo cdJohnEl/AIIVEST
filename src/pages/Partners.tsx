@@ -176,10 +176,10 @@ export default function Partners() {
             Reach out to our partnerships team to discuss opportunities.
           </p>
           <a 
-            href="mailto:partnerships@aiinvestpro.com" 
+            href="mailto:partnerships@nexusfinpro.com" 
             className="text-[#2D6BFF] hover:underline text-lg"
           >
-            partnerships@aiinvestpro.com
+            partnerships@nexusfinpro.com
           </a>
         </div>
       </div>

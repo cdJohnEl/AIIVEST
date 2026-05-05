@@ -102,7 +102,7 @@ export default function CTASection() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm text-[#8B95A8]">
                   <Mail className="w-4 h-4" />
-                  <span>support@aiinvestpro.com</span>
+                  <span>support@nexusfinpro.com</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-[#8B95A8]">
                   <Phone className="w-4 h-4" />

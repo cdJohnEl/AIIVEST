@@ -117,10 +117,10 @@ export default function Terms() {
             Contact our legal team for clarification on any terms.
           </p>
           <a 
-            href="mailto:legal@aiinvestpro.com" 
+            href="mailto:info@nexusfinpro.com" 
             className="text-[#2D6BFF] hover:underline"
           >
-            legal@aiinvestpro.com
+            info@nexusfinpro.com
           </a>
         </div>
       </div>

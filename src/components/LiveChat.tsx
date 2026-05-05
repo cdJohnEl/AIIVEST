@@ -12,7 +12,7 @@ Your goals:
 4. Assist with general platform navigation.
 5. Embody a professional, helpful, and "premium" fintech brand voice.
 6. If asked about technical blockchain details, explain them simply.
-7. If you cannot answer a specific account-level question, suggest contacting partnerships@aiinvestpro.com.
+7. If you cannot answer a specific account-level question, suggest contacting partnerships@nexusfinpro.com.
 Keep responses concise but supportive.`;
 
 interface ChatMessage {
@@ -71,7 +71,7 @@ export function LiveChat() {
       
       const botResponse: ChatMessage = {
         id: Date.now() + 1,
-        text: aiResponse || "I'm having a bit of trouble connecting to my brain. Please try again or contact support at partnerships@aiinvestpro.com.",
+        text: aiResponse || "I'm having a bit of trouble connecting to my brain. Please try again or contact support at partnerships@nexusfinpro.com.",
         sender: 'bot',
         timestamp: new Date(),
       };

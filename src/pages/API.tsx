@@ -13,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 
 const codeExample = `// Get portfolio balance
-const response = await fetch('https://api.aiinvestpro.com/v1/portfolio', {
+const response = await fetch('https://api.nexusfinpro.com/v1/portfolio', {
   headers: {
     'Authorization': 'Bearer YOUR_API_KEY',
     'Content-Type': 'application/json'

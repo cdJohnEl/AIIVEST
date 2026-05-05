@@ -174,10 +174,10 @@ export default function Press() {
             For press inquiries, interview requests, or additional information.
           </p>
           <a 
-            href="mailto:press@aiinvestpro.com" 
+            href="mailto:info@nexusfinpro.com" 
             className="text-[#2D6BFF] hover:underline text-lg"
           >
-            press@aiinvestpro.com
+            info@nexusfinpro.com
           </a>
         </div>
       </div>

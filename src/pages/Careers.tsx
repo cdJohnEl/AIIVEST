@@ -206,10 +206,10 @@ export default function Careers() {
             We are always interested in meeting talented people. Send us your resume.
           </p>
           <a 
-            href="mailto:careers@aiinvestpro.com" 
+            href="mailto:info@nexusfinpro.com" 
             className="text-[#2D6BFF] hover:underline"
           >
-            careers@aiinvestpro.com
+            info@nexusfinpro.com
           </a>
         </div>
       </div>

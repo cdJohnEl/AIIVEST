@@ -18,7 +18,7 @@ const contactMethods = [
   {
     icon: Mail,
     title: 'Email Support',
-    value: 'support@aiinvestpro.com',
+    value: 'support@nexusfinpro.com',
     description: 'General inquiries and support',
     responseTime: '24 hours',
   },
@@ -39,18 +39,18 @@ const contactMethods = [
 ];
 
 const departments = [
-  { name: 'General Support', email: 'support@aiinvestpro.com' },
-  { name: 'Sales', email: 'sales@aiinvestpro.com' },
-  { name: 'Partnerships', email: 'partnerships@aiinvestpro.com' },
-  { name: 'Press', email: 'press@aiinvestpro.com' },
-  { name: 'Security', email: 'security@aiinvestpro.com' },
-  { name: 'Legal', email: 'legal@aiinvestpro.com' },
+  { name: 'General Support', email: 'support@nexusfinpro.com' },
+  { name: 'Sales', email: 'admin@nexusfinpro.com' },
+  { name: 'Partnerships', email: 'partnerships@nexusfinpro.com' },
+  { name: 'Press', email: 'info@nexusfinpro.com' },
+  { name: 'Security', email: 'security@nexusfinpro.com' },
+  { name: 'Legal', email: 'info@nexusfinpro.com' },
 ];
 
 const socialLinks = [
-  { icon: Twitter, name: 'Twitter', url: 'https://twitter.com/aiinvestpro' },
-  { icon: Linkedin, name: 'LinkedIn', url: 'https://linkedin.com/company/aiinvestpro' },
-  { icon: Github, name: 'GitHub', url: 'https://github.com/aiinvestpro' },
+  { icon: Twitter, name: 'Twitter', url: 'https://twitter.com/nexusfinpro' },
+  { icon: Linkedin, name: 'LinkedIn', url: 'https://linkedin.com/company/nexusfinpro' },
+  { icon: Github, name: 'GitHub', url: 'https://github.com/nexusfinpro' },
 ];
 
 export default function Contact() {

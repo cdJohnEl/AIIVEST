@@ -187,7 +187,7 @@ export default function Security() {
               We reward security researchers who help us identify vulnerabilities. 
               Rewards up to $50,000 for critical findings.
             </p>
-            <a href="mailto:security@aiinvestpro.com" className="text-[#2D6BFF] text-sm hover:underline">
+            <a href="mailto:security@nexusfinpro.com" className="text-[#2D6BFF] text-sm hover:underline">
               Report a vulnerability →
             </a>
           </div>

@@ -136,10 +136,10 @@ export default function Disclosures() {
             Contact our support team for clarification on any risk factors.
           </p>
           <a 
-            href="mailto:support@aiinvestpro.com" 
+            href="mailto:support@nexusfinpro.com" 
             className="text-[#2D6BFF] hover:underline"
           >
-            support@aiinvestpro.com
+            support@nexusfinpro.com
           </a>
         </div>
       </div>

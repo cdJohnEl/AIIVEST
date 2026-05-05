@@ -118,10 +118,10 @@ export default function Privacy() {
             Contact our Data Protection Officer for any privacy-related inquiries.
           </p>
           <a 
-            href="mailto:privacy@aiinvestpro.com" 
+            href="mailto:info@nexusfinpro.com" 
             className="text-[#2D6BFF] hover:underline"
           >
-            privacy@aiinvestpro.com
+            info@nexusfinpro.com
           </a>
         </div>
       </div>

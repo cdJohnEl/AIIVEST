@@ -182,10 +182,10 @@ export default function HelpCenter() {
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
             <a 
-              href="mailto:support@aiinvestpro.com" 
+              href="mailto:support@nexusfinpro.com" 
               className="text-[#2D6BFF] hover:underline"
             >
-              support@aiinvestpro.com
+              support@nexusfinpro.com
             </a>
           </div>
         </div>
