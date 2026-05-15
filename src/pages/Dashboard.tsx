@@ -14,7 +14,6 @@ import {
   Percent,
   Download,
   Upload,
-  Activity,
   Eye,
   RefreshCw,
   ArrowDownRight,
