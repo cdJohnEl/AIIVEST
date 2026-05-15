@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Check } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -34,6 +34,7 @@ export default function Register() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { register, isAuthenticated } = useAuth();
 
   useEffect(() => {
@@ -42,6 +43,13 @@ export default function Register() {
       navigate('/dashboard', { replace: true });
     }
   }, [isAuthenticated, navigate, isLoading]);
+
+  useEffect(() => {
+    const ref = searchParams.get('ref');
+    if (ref) {
+      setReferralCode(ref.toUpperCase());
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -340,7 +348,8 @@ export default function Register() {
                 placeholder="e.g. NEXUS-A1B2C3"
                 value={referralCode}
                 onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                className="bg-white/5 border-white/10 text-[#F4F6FF] placeholder:text-[#A7B1C8]/50 focus:border-[#2D6BFF] focus:ring-[#2D6BFF]/20 font-mono tracking-widest uppercase"
+                className="bg-white/5 border-white/10 text-[#F4F6FF] placeholder:text-[#A7B1C8]/50 focus:border-[#2D6BFF] focus:ring-[#2D6BFF]/20 font-mono tracking-widest uppercase disabled:opacity-70 disabled:cursor-not-allowed"
+                disabled={!!searchParams.get('ref')}
               />
             </div>
 

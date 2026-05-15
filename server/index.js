@@ -236,32 +236,64 @@ async function accumulateROI() {
       const userId = invData.userId;
       
       // Calculate ROI increment
-      // For demo: runs every 10 mins (1/144th of a day)
-      // dailyReturn is already calculated during investment creation/approval
       const roiIncrement = invData.dailyReturn / 144;
-      
       if (roiIncrement <= 0) continue;
 
       try {
-        const portfolioRef = db.collection('portfolios').doc(userId);
-        
+        // Fetch user data to check for referrer
+        const userSnap = await db.collection('users').doc(userId).get();
+        const userData = userSnap.exists ? userSnap.data() : null;
+        const referredBy = userData ? userData.referredBy : null;
+
         await db.runTransaction(async (transaction) => {
-          const portSnap = await transaction.get(portfolioRef);
-          if (!portSnap.exists) return;
-
-          const portData = portSnap.data();
-
-          // Update Investment
+          // 1. Update Investor's Investment
           transaction.update(invDoc.ref, {
             totalReturn: admin.firestore.FieldValue.increment(roiIncrement),
             lastAccumulation: admin.firestore.Timestamp.now()
           });
 
-          // Update Portfolio
+          // 2. Update Investor's Portfolio
+          const portfolioRef = db.collection('portfolios').doc(userId);
           transaction.update(portfolioRef, {
             totalReturns: admin.firestore.FieldValue.increment(roiIncrement),
             availableBalance: admin.firestore.FieldValue.increment(roiIncrement)
           });
+
+          // 3. Handle Referral Commission (Dynamic Tiers)
+          if (referredBy) {
+            const referrerPortfolioRef = db.collection('portfolios').doc(referredBy);
+            const referrerPortSnap = await transaction.get(referrerPortfolioRef);
+
+            if (referrerPortSnap.exists) {
+              const rCount = referrerPortSnap.data().referralCount || 0;
+              
+              // Tier-based logic: Starter (10%), Pro (20% for 11-50), Elite (30% for 51+)
+              let commissionRate = 0.10;
+              let tier = "Starter";
+              if (rCount > 50) { commissionRate = 0.30; tier = "Elite"; }
+              else if (rCount > 10) { commissionRate = 0.20; tier = "Pro"; }
+
+              const commission = roiIncrement * commissionRate;
+
+              transaction.update(referrerPortfolioRef, {
+                availableBalance: admin.firestore.FieldValue.increment(commission),
+                referralEarnings: admin.firestore.FieldValue.increment(commission)
+              });
+
+              // Log commission transaction
+              const newTxRef = db.collection('transactions').doc();
+              transaction.set(newTxRef, {
+                userId: referredBy,
+                userName: 'Referral System',
+                type: 'referral_commission',
+                amount: commission,
+                currency: 'USD',
+                status: 'confirmed',
+                description: `[${tier}] Commission from ${invData.userName || 'Referral'}'s ROI`,
+                createdAt: new Date().toISOString()
+              });
+            }
+          }
         });
         
         updatedCount++;

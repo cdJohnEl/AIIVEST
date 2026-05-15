@@ -18,7 +18,12 @@ import {
   Eye,
   RefreshCw,
   ArrowDownRight,
-  ArrowUpRight
+  ArrowUpRight,
+  UsersRound,
+  Copy,
+  Check,
+  Share2,
+  Award
 } from 'lucide-react';
 import { useInvestment } from '../contexts/InvestmentContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -139,6 +144,37 @@ export default function Dashboard() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isDepositOpen, setIsDepositOpen] = useState(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [referredUsers, setReferredUsers] = useState<any[]>([]);
+  const [refLoading, setRefLoading] = useState(true);
+
+  const referralLink = `${window.location.origin}/register?ref=${user?.referralCode}`;
+
+  const handleCopyCode = () => {
+    if (!user?.referralCode) return;
+    navigator.clipboard.writeText(user.referralCode);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
+  };
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(referralLink);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
+
+  useEffect(() => {
+    if (!user) return;
+    const q = query(collection(db, 'users'), where('referredBy', '==', user.id));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setReferredUsers(users);
+      setRefLoading(false);
+    });
+    return () => unsubscribe();
+  }, [user]);
+
   const [transactions, setTransactions] = useState<any[]>([]);
   const [txLoading, setTxLoading] = useState(true);
 
@@ -274,9 +310,9 @@ export default function Dashboard() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 xl:grid-cols-5 gap-4 mb-8">
         {portfolioLoading ? (
-            <>{[...Array(4)].map((_, i) => <StatCardSkeleton key={i} />)}</>
+            <>{[...Array(5)].map((_, i) => <StatCardSkeleton key={i} />)}</>
           ) : (<>
           <StatCard
             title="Portfolio Value"
@@ -295,18 +331,25 @@ export default function Dashboard() {
             icon={PieChart}
           />
           <StatCard
-            title="Total Returns"
+            title="Investment Profit"
             value={`+$${(portfolio.totalReturns || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
             subValue="All time profit"
             positive={true}
             icon={Percent}
           />
           <StatCard
+            title="Referral Proceeds"
+            value={`+$${(portfolio.referralEarnings || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+            subValue="Bonuses & comms"
+            positive={true}
+            icon={UsersRound}
+          />
+          <StatCard
             title="Daily Returns"
-            value={`+$${liveDaily.toFixed(2)}`}
-            subValue="Updated live"
-            positive={liveDaily >= 0}
-            icon={Activity}
+            value={`+$${(portfolio.dailyReturns || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+            subValue="Expected daily"
+            positive={true}
+            icon={TrendingUp}
           />
           </>)}
         </div>
@@ -520,6 +563,95 @@ export default function Dashboard() {
                 >
                   Withdraw
                 </button>
+              </div>
+            </div>
+
+            {/* Referral Center */}
+            <div className="pro-card p-6 mb-6">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-[#10B981]/10">
+                    <Share2 className="w-5 h-5 text-[#10B981]" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-[#F4F6FF]">Referral Center</h3>
+                    <p className="text-[10px] text-[#5A6578]">Earn up to 30% commissions</p>
+                  </div>
+                </div>
+                <div className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                  portfolio.referralCount > 50 ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' :
+                  portfolio.referralCount > 10 ? 'bg-[#2D6BFF]/20 text-[#2D6BFF] border border-[#2D6BFF]/30' :
+                  'bg-[#10B981]/20 text-[#10B981] border border-[#10B981]/30'
+                }`}>
+                  <div className="flex items-center gap-1">
+                    <Award className="w-3 h-3" />
+                    {portfolio.referralCount > 50 ? 'Elite' : portfolio.referralCount > 10 ? 'Pro' : 'Starter'}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4 mb-6">
+                <div className="space-y-1.5">
+                  <p className="text-[10px] text-[#A7B1C8] font-medium">Unique Referral Link</p>
+                  <div className="flex items-center gap-2 bg-[#0D1220] p-2 rounded-lg border border-white/5">
+                    <code className="text-[10px] text-[#2D6BFF] truncate flex-1">{referralLink}</code>
+                    <button 
+                      onClick={handleCopyLink}
+                      className="p-1 hover:bg-white/5 rounded transition-colors"
+                    >
+                      {copiedLink ? <Check className="w-3 h-3 text-[#10B981]" /> : <Copy className="w-3 h-3 text-[#5A6578]" />}
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <p className="text-[10px] text-[#A7B1C8] font-medium">Your Code: <span className="text-[#F4F6FF] uppercase font-bold">{user?.referralCode}</span></p>
+                  <button 
+                    onClick={handleCopyCode}
+                    className="w-full btn-secondary text-[10px] py-1.5 flex items-center justify-center gap-2"
+                  >
+                    {copiedCode ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                    {copiedCode ? 'Copied!' : 'Copy Code'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-white/5">
+                <h4 className="text-[10px] font-medium text-[#A7B1C8] mb-3 flex items-center justify-between">
+                  <span>Your Network</span>
+                  <span className="text-[#F4F6FF]">{referredUsers.length} members</span>
+                </h4>
+                {refLoading ? (
+                  <div className="space-y-2">
+                    {[...Array(2)].map((_, i) => <div key={i} className="h-10 w-full bg-white/5 rounded-lg animate-pulse" />)}
+                  </div>
+                ) : referredUsers.length === 0 ? (
+                  <div className="text-center py-4 bg-white/[0.01] rounded-lg border border-dashed border-white/5">
+                    <p className="text-[10px] text-[#5A6578]">No referrals yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1 custom-scrollbar">
+                    {referredUsers.map((refUser) => (
+                      <div key={refUser.id} className="flex items-center justify-between p-2 rounded-lg bg-white/[0.02] border border-white/5">
+                        <div className="flex items-center gap-2">
+                          <img 
+                            src={refUser.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${refUser.email}`} 
+                            alt={refUser.name}
+                            className="w-6 h-6 rounded-full border border-white/10"
+                          />
+                          <div>
+                            <p className="text-[10px] font-medium text-[#F4F6FF] truncate max-w-[80px]">{refUser.name}</p>
+                            <p className="text-[8px] text-[#5A6578]">{new Date(refUser.createdAt?.seconds * 1000).toLocaleDateString()}</p>
+                          </div>
+                        </div>
+                        <div className={`px-1.5 py-0.5 rounded text-[8px] font-medium ${
+                          refUser.isVerified ? 'bg-[#10B981]/10 text-[#10B981]' : 'bg-[#EF4444]/10 text-[#EF4444]'
+                        }`}>
+                          {refUser.isVerified ? 'Verified' : 'Pending'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 

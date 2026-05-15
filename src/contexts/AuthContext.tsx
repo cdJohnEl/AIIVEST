@@ -170,7 +170,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   if (referrerPortSnap.exists()) {
                       const currentPortfolio = referrerPortSnap.data();
                       transaction.update(referrerPortfolioRef, {
-                          availableBalance: (currentPortfolio.availableBalance || 0) + 50
+                          availableBalance: (currentPortfolio.availableBalance || 0) + 50,
+                          referralEarnings: (currentPortfolio.referralEarnings || 0) + 50,
+                          referralCount: (currentPortfolio.referralCount || 0) + 1
                       });
 
                       // Log transaction

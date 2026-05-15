@@ -41,6 +41,8 @@ export interface Portfolio {
   dailyReturns: number;
   activeInvestments: number;
   availableBalance: number;
+  referralEarnings: number;
+  referralCount: number;
 }
 
 interface InvestmentContextType {
@@ -126,7 +128,9 @@ export function InvestmentProvider({ children }: { children: React.ReactNode }) 
     totalReturns: 0,
     dailyReturns: 0,
     activeInvestments: 0,
-    availableBalance: 0, 
+    availableBalance: 0,
+    referralEarnings: 0,
+    referralCount: 0,
   });
 
   // Fetch investments real-time
@@ -158,6 +162,8 @@ export function InvestmentProvider({ children }: { children: React.ReactNode }) 
         dailyReturns: 0,
         activeInvestments: 0,
         availableBalance: 0,
+        referralEarnings: 0,
+        referralCount: 0,
       });
       setPortfolioLoading(false);
       return;
