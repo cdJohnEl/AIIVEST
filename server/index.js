@@ -2,6 +2,15 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
+const admin = require('firebase-admin');
+const serviceAccount = require('./serviceAccountKey.json');
+
+// Initialize Firebase Admin
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
+const db = admin.firestore();
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -200,3 +209,76 @@ app.post('/api/send-email', handleEmailRequest);
 app.listen(port, () => {
   console.log(`NexusFinPro Email Backend running on port ${port}`);
 });
+
+// ─── ROI ENGINE ─────────────────────────────────────────────────────────────
+
+/**
+ * Accumulates ROI for all active investments.
+ * Runs in the background independently of the email system.
+ */
+async function accumulateROI() {
+  console.log(`[ROI Engine] Starting accumulation cycle: ${new Date().toISOString()}`);
+  
+  try {
+    const investmentsSnapshot = await db.collection('investments')
+      .where('status', '==', 'active')
+      .get();
+
+    if (investmentsSnapshot.empty) {
+      console.log('[ROI Engine] No active investments found.');
+      return;
+    }
+
+    let updatedCount = 0;
+
+    for (const invDoc of investmentsSnapshot.docs) {
+      const invData = invDoc.data();
+      const userId = invData.userId;
+      
+      // Calculate ROI increment
+      // For demo: runs every 10 mins (1/144th of a day)
+      // dailyReturn is already calculated during investment creation/approval
+      const roiIncrement = invData.dailyReturn / 144;
+      
+      if (roiIncrement <= 0) continue;
+
+      try {
+        const portfolioRef = db.collection('portfolios').doc(userId);
+        
+        await db.runTransaction(async (transaction) => {
+          const portSnap = await transaction.get(portfolioRef);
+          if (!portSnap.exists) return;
+
+          const portData = portSnap.data();
+
+          // Update Investment
+          transaction.update(invDoc.ref, {
+            totalReturn: admin.firestore.FieldValue.increment(roiIncrement),
+            lastAccumulation: admin.firestore.Timestamp.now()
+          });
+
+          // Update Portfolio
+          transaction.update(portfolioRef, {
+            totalReturns: admin.firestore.FieldValue.increment(roiIncrement),
+            availableBalance: admin.firestore.FieldValue.increment(roiIncrement)
+          });
+        });
+        
+        updatedCount++;
+      } catch (err) {
+        console.error(`[ROI Engine] Failed to update ROI for investment ${invDoc.id}:`, err);
+      }
+    }
+
+    console.log(`[ROI Engine] Successfully processed ROI for ${updatedCount} investments.`);
+  } catch (error) {
+    console.error('[ROI Engine] Critical Error in accumulation cycle:', error);
+  }
+}
+
+// Run Every 10 Minutes
+const ROI_INTERVAL_MS = 10 * 60 * 1000;
+setInterval(accumulateROI, ROI_INTERVAL_MS);
+
+// Run once on startup after 5 seconds to verify
+setTimeout(accumulateROI, 5000);

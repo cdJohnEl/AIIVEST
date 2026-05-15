@@ -77,20 +77,20 @@ export default function InvestmentPlans() {
               <div>
                 <p className="text-sm text-[#A7B1C8] mb-1">Available Balance</p>
                 <p className="text-3xl font-bold text-[#F4F6FF]">
-                  ${portfolio.availableBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  ${(portfolio.availableBalance || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                 </p>
               </div>
               <div className="flex items-center gap-6">
                 <div className="text-center">
                   <p className="text-sm text-[#A7B1C8] mb-1">Total Invested</p>
                   <p className="text-xl font-semibold text-[#F4F6FF]">
-                    ${portfolio.totalInvested.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    ${(portfolio.totalInvested || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
                 <div className="text-center">
                   <p className="text-sm text-[#A7B1C8] mb-1">Total Returns</p>
                   <p className="text-xl font-semibold text-[#10B981]">
-                    +${portfolio.totalReturns.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    +${(portfolio.totalReturns || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
               </div>

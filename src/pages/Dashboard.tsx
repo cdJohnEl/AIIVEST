@@ -131,8 +131,11 @@ function StatCard({
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
-  const { portfolio, userInvestments, plans } = useInvestment();
+  const { portfolio, userInvestments, plans, portfolioLoading } = useInvestment();
   const { liveValue, liveDaily } = useLivePortfolio();
+  // Show active AND pending investments (pending = awaiting admin approval)
+  const visibleInvestments = userInvestments.filter(inv => inv.status === 'active' || inv.status === 'pending');
+  const activeInvestments = userInvestments.filter(inv => inv.status === 'active');
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isDepositOpen, setIsDepositOpen] = useState(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
@@ -272,7 +275,7 @@ export default function Dashboard() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {txLoading ? (
+        {portfolioLoading ? (
             <>{[...Array(4)].map((_, i) => <StatCardSkeleton key={i} />)}</>
           ) : (<>
           <StatCard
@@ -285,15 +288,15 @@ export default function Dashboard() {
           />
           <StatCard
             title="Total Invested"
-            value={`$${portfolio.totalInvested.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-            subValue={`${portfolio.activeInvestments}`}
+            value={`$${(portfolio.totalInvested || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+            subValue={`${portfolio.activeInvestments || activeInvestments.length}`}
             subLabel=" active investments"
             positive={true}
             icon={PieChart}
           />
           <StatCard
             title="Total Returns"
-            value={`+$${portfolio.totalReturns.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+            value={`+$${(portfolio.totalReturns || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
             subValue="All time profit"
             positive={true}
             icon={Percent}
@@ -374,8 +377,8 @@ export default function Dashboard() {
             <div className="pro-card p-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-[#F4F6FF]">Active Investments</h3>
-                  <p className="text-xs text-[#5A6578]">Your current investment plans</p>
+                  <h3 className="text-lg font-semibold text-[#F4F6FF]">Investments</h3>
+                  <p className="text-xs text-[#5A6578]">Active &amp; pending approval</p>
                 </div>
                 <Link to="/plans" className="text-sm text-[#2D6BFF] hover:text-[#5B8DEF] transition-colors flex items-center gap-1">
                   View All
@@ -383,12 +386,12 @@ export default function Dashboard() {
                 </Link>
               </div>
               
-              {userInvestments.length === 0 ? (
+              {visibleInvestments.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="w-16 h-16 rounded-xl bg-white/[0.03] flex items-center justify-center mx-auto mb-4">
                     <PieChart className="w-8 h-8 text-[#5A6578]" />
                   </div>
-                  <p className="text-[#8B95A8] mb-4">No active investments yet</p>
+                  <p className="text-[#8B95A8] mb-4">No investments yet</p>
                   <Link to="/plans" className="btn-primary inline-flex items-center gap-2">
                     <Plus className="w-4 h-4" />
                     Start Investing
@@ -396,12 +399,17 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {userInvestments.map((investment) => {
+                  {visibleInvestments.map((investment) => {
                     const plan = getPlanById(investment.planId);
+                    const isPending = investment.status === 'pending';
                     return (
                       <div 
                         key={investment.id} 
-                        className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] transition-colors border border-white/[0.04]"
+                        className={`flex items-center justify-between p-4 rounded-xl transition-colors border ${
+                          isPending 
+                            ? 'bg-yellow-500/5 border-yellow-500/20 hover:bg-yellow-500/10' 
+                            : 'bg-white/[0.02] border-white/[0.04] hover:bg-white/[0.04]'
+                        }`}
                       >
                         <div className="flex items-center gap-4">
                           <div 
@@ -411,9 +419,16 @@ export default function Dashboard() {
                             <TrendingUp className="w-5 h-5" style={{ color: plan?.color }} />
                           </div>
                           <div>
-                            <p className="text-[#F4F6FF] font-medium">{investment.planName}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-[#F4F6FF] font-medium">{investment.planName}</p>
+                              {isPending && (
+                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 animate-pulse">
+                                  Pending Approval
+                                </span>
+                              )}
+                            </div>
                             <p className="text-xs text-[#5A6578]">
-                              Started {new Date(investment.startDate).toLocaleDateString()}
+                              {isPending ? 'Awaiting admin review' : `Started ${new Date(investment.startDate).toLocaleDateString()}`}
                             </p>
                           </div>
                         </div>
@@ -421,8 +436,8 @@ export default function Dashboard() {
                           <p className="text-[#F4F6FF] font-medium font-mono">
                             ${investment.amount.toLocaleString()}
                           </p>
-                          <p className="text-xs text-[#10B981]">
-                            +${investment.totalReturn.toFixed(2)} earned
+                          <p className={`text-xs ${isPending ? 'text-yellow-500' : 'text-[#10B981]'}`}>
+                            {isPending ? 'Pending' : `+$${(investment.totalReturn || 0).toFixed(2)} earned`}
                           </p>
                         </div>
                       </div>

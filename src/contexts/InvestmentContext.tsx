@@ -47,6 +47,7 @@ interface InvestmentContextType {
   plans: InvestmentPlan[];
   userInvestments: UserInvestment[];
   portfolio: Portfolio;
+  portfolioLoading: boolean;
   invest: (planId: string, amount: number) => Promise<boolean>;
   withdraw: (amount: number) => Promise<boolean>;
 }
@@ -119,6 +120,7 @@ const InvestmentContext = createContext<InvestmentContextType | undefined>(undef
 export function InvestmentProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [userInvestments, setUserInvestments] = useState<UserInvestment[]>([]);
+  const [portfolioLoading, setPortfolioLoading] = useState(true);
   const [portfolio, setPortfolio] = useState<Portfolio>({
     totalInvested: 0,
     totalReturns: 0,
@@ -157,6 +159,7 @@ export function InvestmentProvider({ children }: { children: React.ReactNode }) 
         activeInvestments: 0,
         availableBalance: 0,
       });
+      setPortfolioLoading(false);
       return;
     }
 
@@ -169,8 +172,10 @@ export function InvestmentProvider({ children }: { children: React.ReactNode }) 
       } else {
         console.log('InvestmentContext: Portfolio does not exist yet (waiting for registration sync)');
       }
+      setPortfolioLoading(false);
     }, (error) => {
       console.error('InvestmentContext: Portfolio snapshot error:', error);
+      setPortfolioLoading(false);
     });
 
     return () => unsubscribe();
@@ -239,42 +244,15 @@ export function InvestmentProvider({ children }: { children: React.ReactNode }) 
     }
   };
 
-  // Simulate daily returns in background for demo (in real app, this would be a cloud function)
-  useEffect(() => {
-    if (!user || userInvestments.length === 0) return;
-
-    const interval = setInterval(async () => {
-      try {
-        const portfolioRef = doc(db, 'portfolios', user.id);
-        
-        // Use transaction to update returns
-        await runTransaction(db, async (transaction) => {
-          const portSnap = await transaction.get(portfolioRef);
-          if (!portSnap.exists()) return;
-
-          const currentPortfolio = portSnap.data() as Portfolio;
-          const returnedAmount = currentPortfolio.dailyReturns;
-
-          // In a real app, we'd loop through all active investments and update their totalReturn too.
-          // For this demo, we'll just update the portfolio balance.
-          transaction.update(portfolioRef, {
-            totalReturns: currentPortfolio.totalReturns + returnedAmount,
-            availableBalance: currentPortfolio.availableBalance + returnedAmount,
-          });
-        });
-      } catch (error) {
-        console.error('Simulation error:', error);
-      }
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [user, userInvestments.length]);
+  // NOTE: Daily returns accumulation is handled server-side (admin approval or Cloud Function).
+  // Client-side simulation was removed because Firestore rules restrict portfolio writes to admins only.
 
   return (
     <InvestmentContext.Provider value={{
       plans: investmentPlans,
       userInvestments,
       portfolio,
+      portfolioLoading,
       invest,
       withdraw,
     }}>
