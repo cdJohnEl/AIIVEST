@@ -1,15 +1,31 @@
 import { useState, useEffect } from 'react';
-import { 
-  collection, 
-  onSnapshot, 
-  query, 
-  orderBy, 
+import {
+  collection,
+  onSnapshot,
+  query,
+  orderBy,
   updateDoc,
-  doc, 
-  deleteDoc,
-  setDoc
+  doc,
 } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { db, auth } from '../../lib/firebase';
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+
+async function adminFetch(path: string, init: RequestInit = {}) {
+  const token = await auth.currentUser?.getIdToken();
+  if (!token) throw new Error('Not authenticated');
+  const res = await fetch(`${BACKEND_URL}${path}`, {
+    ...init,
+    headers: {
+      ...(init.headers || {}),
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error || `Request failed (${res.status})`);
+  return body;
+}
 import { 
   Search, 
   UserPlus, 
@@ -107,14 +123,14 @@ export default function UserManagement() {
   };
 
   const handleDeleteUser = async (userId: string) => {
-    if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
-    
+    if (!window.confirm('Delete this user? This cascades through their portfolio, investments, transactions, and login. Cannot be undone.')) return;
+
     try {
-      await deleteDoc(doc(db, 'users', userId));
-      toast.success('User deleted successfully');
-    } catch (error) {
+      await adminFetch(`/api/admin/users/${userId}`, { method: 'DELETE' });
+      toast.success('User and all associated data deleted');
+    } catch (error: any) {
       console.error('Error deleting user:', error);
-      toast.error('Failed to delete user');
+      toast.error(error.message || 'Failed to delete user');
     }
   };
 
@@ -127,32 +143,21 @@ export default function UserManagement() {
 
     setIsSubmitting(true);
     try {
-      // In a real app, this might call a Cloud Function to create the Auth account.
-      // For this implementation, we create the Firestore documents.
-      const userId = `user_${Date.now()}`;
-      
-      await setDoc(doc(db, 'users', userId), {
-        name: newUser.name,
-        email: newUser.email,
-        role: newUser.role,
-        createdAt: new Date().toISOString(),
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${newUser.email}`
+      await adminFetch('/api/admin/users', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: newUser.name,
+          email: newUser.email,
+          role: newUser.role,
+        }),
       });
 
-      await setDoc(doc(db, 'portfolios', userId), {
-        totalInvested: 0,
-        totalReturns: 0,
-        dailyReturns: 0,
-        activeInvestments: 0,
-        availableBalance: 0,
-      });
-
-      toast.success('User created successfully');
+      toast.success('User created — password setup email sent.');
       setIsAddModalOpen(false);
       setNewUser({ name: '', email: '', role: 'user' });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding user:', error);
-      toast.error('Failed to add user');
+      toast.error(error.message || 'Failed to add user');
     } finally {
       setIsSubmitting(false);
     }
@@ -347,7 +352,7 @@ export default function UserManagement() {
           <DialogHeader>
             <DialogTitle>Add New User</DialogTitle>
             <DialogDescription className="text-[#A7B1C8]">
-              Create a new user account and assign a role. In a production system, this would also trigger a welcome email.
+              Creates a Firebase Auth account and sends the user a "set your password" email. They can log in immediately after setting their password.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleAddUser} className="space-y-4 pt-4">

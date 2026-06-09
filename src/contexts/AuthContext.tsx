@@ -152,21 +152,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Check if referred by someone
       if (referralCodeFromInput) {
         try {
-          const { collection, query, where, getDocs, runTransaction } = await import('firebase/firestore');
-          const usersRef = collection(db, 'users');
-          const q = query(usersRef, where('referralCode', '==', referralCodeFromInput.trim().toUpperCase()));
-          const querySnapshot = await getDocs(q);
-          
-          if (!querySnapshot.empty) {
-            const referrerDoc = querySnapshot.docs[0];
-            referredBy = referrerDoc.id;
-            
+          const { getDoc, runTransaction, collection } = await import('firebase/firestore');
+          const code = referralCodeFromInput.trim().toUpperCase();
+          const codeRef = doc(db, 'referralCodes', code);
+          const codeSnap = await getDoc(codeRef);
+
+          if (codeSnap.exists()) {
+            const codeData = codeSnap.data() as { ownerUid: string; ownerName?: string };
+            referredBy = codeData.ownerUid;
+
             // Transaction to safely award bonus
             try {
                await runTransaction(db, async (transaction) => {
-                  const referrerPortfolioRef = doc(db, 'portfolios', referredBy);
+                  const referrerPortfolioRef = doc(db, 'portfolios', codeData.ownerUid);
                   const referrerPortSnap = await transaction.get(referrerPortfolioRef);
-                  
+
                   if (referrerPortSnap.exists()) {
                       const currentPortfolio = referrerPortSnap.data();
                       transaction.update(referrerPortfolioRef, {
@@ -178,8 +178,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                       // Log transaction
                       const newTxRef = doc(collection(db, 'transactions'));
                       transaction.set(newTxRef, {
-                          userId: referredBy,
-                          userName: referrerDoc.data().name,
+                          userId: codeData.ownerUid,
+                          userName: codeData.ownerName || 'Referrer',
                           type: 'referral_bonus',
                           amount: 50,
                           currency: 'USD',
@@ -199,9 +199,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      // Atomic registration: Profile + Portfolio
+      // Atomic registration: Profile + Portfolio + Referral lookup
       const userDocRef = doc(db, 'users', firebaseUser.uid);
       const portfolioDocRef = doc(db, 'portfolios', firebaseUser.uid);
+      const referralCodeRef = doc(db, 'referralCodes', newReferralCode);
 
       await Promise.all([
         setDoc(userDocRef, {
@@ -222,7 +223,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           dailyReturns: 0,
           activeInvestments: 0,
           availableBalance: 0,
-        })
+        }),
+        setDoc(referralCodeRef, {
+          ownerUid: firebaseUser.uid,
+          ownerName: name,
+          createdAt: serverTimestamp(),
+        }),
+        ...(referredBy ? [
+          setDoc(doc(db, 'referrals', referredBy, 'list', firebaseUser.uid), {
+            refereeUid: firebaseUser.uid,
+            name,
+            email,
+            avatar,
+            isVerified: false,
+            createdAt: serverTimestamp(),
+          })
+        ] : [])
       ]);
 
       // Generate the custom NexusFinPro URL, NO Firebase domain

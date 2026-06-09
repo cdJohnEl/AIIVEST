@@ -205,6 +205,165 @@ async function handleEmailRequest(req, res) {
 app.post('/api/emails/send', handleEmailRequest);
 app.post('/api/send-email', handleEmailRequest);
 
+// ─── ADMIN AUTH MIDDLEWARE ──────────────────────────────────────────────────
+
+async function requireAdmin(req, res, next) {
+  try {
+    const header = req.headers.authorization || '';
+    const match = header.match(/^Bearer\s+(.+)$/i);
+    if (!match) return res.status(401).json({ error: 'Missing bearer token' });
+
+    const decoded = await admin.auth().verifyIdToken(match[1]);
+    const userSnap = await db.collection('users').doc(decoded.uid).get();
+    if (!userSnap.exists || userSnap.data().role !== 'admin') {
+      return res.status(403).json({ error: 'Admin privileges required' });
+    }
+    req.adminUid = decoded.uid;
+    next();
+  } catch (err) {
+    console.error('requireAdmin error:', err.message);
+    res.status(401).json({ error: 'Invalid or expired token' });
+  }
+}
+
+// ─── ADMIN: CREATE USER ─────────────────────────────────────────────────────
+
+function generateReferralCode() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let code = 'NEXUS-';
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+app.post('/api/admin/users', requireAdmin, async (req, res) => {
+  try {
+    const { name, email, role } = req.body;
+    if (!name || !email || !['user', 'admin'].includes(role)) {
+      return res.status(400).json({ error: 'name, email, and role are required' });
+    }
+
+    // Random throwaway password — the user resets via the email link below.
+    const tempPassword = require('crypto').randomBytes(24).toString('base64');
+    const userRecord = await admin.auth().createUser({
+      email: email.trim().toLowerCase(),
+      displayName: name,
+      password: tempPassword,
+      emailVerified: false,
+    });
+
+    const referralCode = generateReferralCode();
+    const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`;
+
+    await Promise.all([
+      db.collection('users').doc(userRecord.uid).set({
+        name,
+        email: email.trim().toLowerCase(),
+        avatar,
+        role,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        referralCode,
+        referredBy: '',
+        isVerified: true, // admin-created accounts skip email verification
+        createdByAdmin: req.adminUid,
+      }),
+      db.collection('portfolios').doc(userRecord.uid).set({
+        totalInvested: 0,
+        totalReturns: 0,
+        dailyReturns: 0,
+        activeInvestments: 0,
+        availableBalance: 0,
+      }),
+      db.collection('referralCodes').doc(referralCode).set({
+        ownerUid: userRecord.uid,
+        ownerName: name,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      }),
+    ]);
+
+    // Send password setup link via existing SMTP transporter.
+    const resetLink = await admin.auth().generatePasswordResetLink(email);
+    try {
+      await transporter.sendMail({
+        from: `"NexusFinPro" <${process.env.SMTP_USER}>`,
+        to: email,
+        subject: 'Set your NexusFinPro password',
+        html: `
+<div style="font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;background:#070a12;color:#f4f6ff;padding:40px;border-radius:20px;">
+  <h1 style="margin:0 0 20px;font-size:24px;"><span style="color:#2D6BFF;">Nexus</span>FinPro</h1>
+  <p>Hi ${name},</p>
+  <p>An administrator created a NexusFinPro account for you. Click the button below to set your password and log in.</p>
+  <p style="text-align:center;margin:30px 0;">
+    <a href="${resetLink}" style="background:#2D6BFF;color:#fff;padding:14px 32px;border-radius:10px;text-decoration:none;font-weight:bold;">Set My Password</a>
+  </p>
+  <p style="font-size:11px;color:#5a6578;word-break:break-all;">${resetLink}</p>
+</div>`,
+      });
+    } catch (mailErr) {
+      console.error('Admin-create welcome email failed:', mailErr);
+      // Don't fail the request — user exists, admin can resend manually.
+    }
+
+    res.status(201).json({ uid: userRecord.uid, email: userRecord.email, role });
+  } catch (err) {
+    console.error('Admin createUser error:', err);
+    const status = err.code === 'auth/email-already-exists' ? 409 : 500;
+    res.status(status).json({ error: err.message });
+  }
+});
+
+// ─── ADMIN: DELETE USER (cascade) ───────────────────────────────────────────
+
+async function deleteCollection(query) {
+  const snap = await query.get();
+  if (snap.empty) return;
+  const batch = db.batch();
+  snap.docs.forEach(d => batch.delete(d.ref));
+  await batch.commit();
+}
+
+app.delete('/api/admin/users/:uid', requireAdmin, async (req, res) => {
+  const { uid } = req.params;
+  if (!uid) return res.status(400).json({ error: 'uid required' });
+  if (uid === req.adminUid) {
+    return res.status(400).json({ error: 'Cannot delete your own admin account' });
+  }
+
+  try {
+    // Look up the user's referral code so we can clear the public lookup doc.
+    const userSnap = await db.collection('users').doc(uid).get();
+    const referralCode = userSnap.exists ? userSnap.data().referralCode : null;
+    const referredBy = userSnap.exists ? userSnap.data().referredBy : null;
+
+    await Promise.all([
+      // Auth account
+      admin.auth().deleteUser(uid).catch(e => {
+        if (e.code !== 'auth/user-not-found') throw e;
+      }),
+      // User profile + portfolio
+      db.collection('users').doc(uid).delete(),
+      db.collection('portfolios').doc(uid).delete(),
+      // Owned investments and transactions
+      deleteCollection(db.collection('investments').where('userId', '==', uid)),
+      deleteCollection(db.collection('transactions').where('userId', '==', uid)),
+      // Public referral code lookup
+      referralCode
+        ? db.collection('referralCodes').doc(referralCode).delete().catch(() => {})
+        : Promise.resolve(),
+      // Their downline subcollection (where they are the referrer)
+      deleteCollection(db.collection('referrals').doc(uid).collection('list')),
+      // Their entry in their own referrer's downline (where they are the referee)
+      referredBy
+        ? db.collection('referrals').doc(referredBy).collection('list').doc(uid).delete().catch(() => {})
+        : Promise.resolve(),
+    ]);
+
+    res.status(200).json({ ok: true, deleted: uid });
+  } catch (err) {
+    console.error('Admin deleteUser error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Start Server
 app.listen(port, () => {
   console.log(`NexusFinPro Email Backend running on port ${port}`);

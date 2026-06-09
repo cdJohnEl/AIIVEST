@@ -64,6 +64,17 @@ export default function Verify() {
           verificationToken: '' // Clear token after use
         });
 
+        // Mirror verification status on the referrer's denormalized list.
+        if (userData.referredBy) {
+          try {
+            await updateDoc(doc(db, 'referrals', userData.referredBy, 'list', uid), {
+              isVerified: true,
+            });
+          } catch (e) {
+            console.error('Failed to mirror verification to referral list:', e);
+          }
+        }
+
         // Trigger the Welcome email now that they are verified
         try {
           // Dynamically import to avoid any circular dependency issues, or just use the direct import

@@ -61,7 +61,10 @@ interface Transaction {
   userName?: string;
   type: 'deposit' | 'withdrawal';
   amount: number;
+  amountUsd?: number;
+  usdRateAtSubmission?: number;
   currency: string;
+  network?: string;
   status: 'pending' | 'detected' | 'confirmed' | 'failed';
   txHash?: string;
   toAddress: string;
@@ -109,7 +112,16 @@ export default function TransactionManagement() {
 
   const handleForceApprove = async (tx: Transaction) => {
     if (tx.status === 'confirmed') return;
-    
+
+    // Stablecoins are 1:1 with USD; everything else must have an amountUsd
+    // captured at submission time. Reject the approval rather than guess.
+    const isStable = tx.currency === 'USDT' || tx.currency === 'USDC';
+    const usdAmount = tx.amountUsd ?? (isStable ? tx.amount : undefined);
+    if (typeof usdAmount !== 'number' || Number.isNaN(usdAmount) || usdAmount <= 0) {
+      toast.error(`Cannot approve: missing USD value for this ${tx.currency} transaction.`);
+      return;
+    }
+
     try {
       const portfolioRef = doc(db, 'portfolios', tx.userId);
       const txRef = doc(db, 'transactions', tx.id);
@@ -118,31 +130,38 @@ export default function TransactionManagement() {
         const portSnap = await transaction.get(portfolioRef);
         if (!portSnap.exists()) throw new Error("Portfolio not found");
 
+        // Re-read the transaction inside the runTransaction so two admins
+        // can't double-approve the same row.
+        const freshTxSnap = await transaction.get(txRef);
+        if (!freshTxSnap.exists()) throw new Error("Transaction no longer exists");
+        if (freshTxSnap.data().status === 'confirmed') {
+          throw new Error("Transaction already confirmed");
+        }
+
         const portfolioData = portSnap.data();
-        
-        // Update Portfolio Balance
+
         if (tx.type === 'deposit') {
           transaction.update(portfolioRef, {
-            availableBalance: (portfolioData.availableBalance || 0) + tx.amount
+            availableBalance: (portfolioData.availableBalance || 0) + usdAmount
           });
         } else if (tx.type === 'withdrawal') {
-          if ((portfolioData.availableBalance || 0) < tx.amount) {
+          if ((portfolioData.availableBalance || 0) < usdAmount) {
             throw new Error("Insufficient balance for withdrawal");
           }
           transaction.update(portfolioRef, {
-            availableBalance: (portfolioData.availableBalance || 0) - tx.amount
+            availableBalance: (portfolioData.availableBalance || 0) - usdAmount
           });
         }
 
-        // Mark Transaction as Confirmed
         transaction.update(txRef, {
           status: 'confirmed',
           confirmations: 6,
+          settledUsd: usdAmount,
           updatedAt: new Date().toISOString()
         });
       });
 
-      toast.success('Transaction manually approved and balance updated');
+      toast.success(`Approved: $${usdAmount.toLocaleString()} credited to user.`);
 
       // Email notification via Resend (server-side)
       import('firebase/firestore').then(({ getDoc, doc: fdoc }) => {
@@ -245,7 +264,7 @@ export default function TransactionManagement() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {[
           { label: 'Pending Verification', value: transactions.filter(t => t.status === 'detected' || t.status === 'pending').length, icon: Clock, color: 'text-yellow-500', bg: 'bg-yellow-500/10' },
-          { label: 'Total Volume', value: `$${transactions.reduce((acc, t) => acc + (t.status === 'confirmed' ? t.amount : 0), 0).toLocaleString()}`, icon: DollarSign, color: 'text-green-500', bg: 'bg-green-500/10' },
+          { label: 'Total Volume', value: `$${transactions.reduce((acc, t) => acc + (t.status === 'confirmed' ? (t.amountUsd ?? 0) : 0), 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, icon: DollarSign, color: 'text-green-500', bg: 'bg-green-500/10' },
           { label: 'Recent Success', value: transactions.filter(t => t.status === 'confirmed').length, icon: CheckCircle2, color: 'text-blue-500', bg: 'bg-blue-500/10' },
           { label: 'Platform Wallets', value: '3 Active', icon: Wallet, color: 'text-purple-500', bg: 'bg-purple-500/10' },
         ].map((stat, i) => (
@@ -347,8 +366,12 @@ export default function TransactionManagement() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-left">
-                      <p className="font-bold text-[#F4F6FF]">${tx.amount.toLocaleString()}</p>
-                      <p className="text-[10px] text-[#A7B1C8]">0.00{tx.amount * 2} {tx.currency}</p>
+                      <p className="font-bold text-[#F4F6FF]">
+                        {typeof tx.amountUsd === 'number'
+                          ? `$${tx.amountUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+                          : '—'}
+                      </p>
+                      <p className="text-[10px] text-[#A7B1C8]">{tx.amount} {tx.currency}</p>
                     </td>
                     <td className="px-6 py-4 text-left">
                       <div className="space-y-1">

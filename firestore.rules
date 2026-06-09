@@ -14,10 +14,33 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // USER PROFILES
+    // USER PROFILES — PII is restricted to the owner and admins.
+    // Referral code lookups happen via the public /referralCodes collection below.
     match /users/{userId} {
-      allow read: if isAuthenticated();
+      allow read: if request.auth.uid == userId || isAdmin();
       allow write: if request.auth.uid == userId || isAdmin();
+    }
+
+    // REFERRAL CODE LOOKUP — public read-only map of code -> ownerUid.
+    // Lets a new user resolve a referral code at registration without
+    // reading the (private) /users collection.
+    match /referralCodes/{code} {
+      allow read: if true;
+      allow create: if request.auth != null
+                       && request.resource.data.ownerUid == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    // DENORMALIZED REFERRAL LIST — only what the referrer dashboard needs.
+    // /referrals/{ownerUid}/list/{refereeUid}
+    // Created by the referee at signup; read by the owner on their dashboard.
+    match /referrals/{ownerUid}/list/{refereeUid} {
+      allow read: if request.auth.uid == ownerUid || isAdmin();
+      allow create: if request.auth != null
+                       && request.auth.uid == refereeUid
+                       && request.resource.data.refereeUid == request.auth.uid;
+      allow update: if request.auth.uid == refereeUid || isAdmin();
+      allow delete: if isAdmin();
     }
 
     // PORTFOLIOS

@@ -26,7 +26,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount, useSendTransaction } from 'wagmi';
 import { parseEther } from 'viem';
-import { checkBitcoinBalance, checkEthereumBalance } from '../lib/blockchain';
 import { useEffect } from 'react';
 import { db } from '../lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
@@ -40,74 +39,115 @@ interface CryptoPaymentModalProps {
 }
 
 const cryptoOptions = [
-  { 
-    id: 'btc', 
-    name: 'Bitcoin', 
-    symbol: 'BTC', 
+  {
+    id: 'btc',
+    name: 'Bitcoin',
+    symbol: 'BTC',
     icon: '₿',
     color: '#F7931A',
     minDeposit: 0.001,
     minWithdraw: 0.002,
     networkFee: 0.0001,
-    processingTime: '10-60 min'
+    processingTime: '10-60 min',
+    priceKey: 'btc',
   },
-  { 
-    id: 'eth', 
-    name: 'Ethereum', 
-    symbol: 'ETH', 
+  {
+    id: 'eth',
+    name: 'Ethereum',
+    symbol: 'ETH',
     icon: 'Ξ',
     color: '#627EEA',
     minDeposit: 0.01,
     minWithdraw: 0.02,
     networkFee: 0.001,
-    processingTime: '2-10 min'
+    processingTime: '2-10 min',
+    priceKey: 'eth',
   },
-  { 
-    id: 'usdt', 
-    name: 'Tether (USDT)', 
-    symbol: 'USDT', 
+  {
+    id: 'usdt-trc20',
+    name: 'USDT (TRC20)',
+    symbol: 'USDT',
     icon: '₮',
     color: '#26A17B',
     minDeposit: 10,
     minWithdraw: 20,
     networkFee: 1,
-    processingTime: '1-5 min'
+    processingTime: '1-5 min',
+    priceKey: 'usdt',
   },
-  { 
-    id: 'usdc', 
-    name: 'USD Coin', 
-    symbol: 'USDC', 
+  {
+    id: 'usdt-erc20',
+    name: 'USDT (ERC20)',
+    symbol: 'USDT',
+    icon: '₮',
+    color: '#26A17B',
+    minDeposit: 10,
+    minWithdraw: 20,
+    networkFee: 5,
+    processingTime: '2-10 min',
+    priceKey: 'usdt',
+  },
+  {
+    id: 'ltc',
+    name: 'Litecoin',
+    symbol: 'LTC',
+    icon: 'Ł',
+    color: '#BFBBBB',
+    minDeposit: 0.1,
+    minWithdraw: 0.2,
+    networkFee: 0.001,
+    processingTime: '5-30 min',
+    priceKey: 'ltc',
+  },
+  {
+    id: 'trx',
+    name: 'Tron',
+    symbol: 'TRX',
+    icon: 'T',
+    color: '#EF0027',
+    minDeposit: 50,
+    minWithdraw: 100,
+    networkFee: 1,
+    processingTime: '1-3 min',
+    priceKey: 'trx',
+  },
+  {
+    id: 'usdc',
+    name: 'USD Coin',
+    symbol: 'USDC',
     icon: 'Ⓤ',
     color: '#2775CA',
     minDeposit: 10,
     minWithdraw: 20,
     networkFee: 1,
-    processingTime: '1-5 min'
+    processingTime: '1-5 min',
+    priceKey: 'usdc',
+    comingSoon: true,
   },
-  { 
-    id: 'xmr', 
-    name: 'Monero', 
-    symbol: 'XMR', 
+  {
+    id: 'xmr',
+    name: 'Monero',
+    symbol: 'XMR',
     icon: 'ɱ',
     color: '#FF6600',
     minDeposit: 0.05,
     minWithdraw: 0.1,
     networkFee: 0.001,
     processingTime: '5-30 min',
-    privacy: true
-  },
-  { 
-    id: 'ltc', 
-    name: 'Litecoin', 
-    symbol: 'LTC', 
-    icon: 'Ł',
-    color: '#BFBBBB',
-    minDeposit: 0.1,
-    minWithdraw: 0.2,
-    networkFee: 0.001,
-    processingTime: '5-30 min'
+    privacy: true,
+    priceKey: 'xmr',
+    comingSoon: true,
   },
 ];
+
+const DEPOSIT_ADDRESSES: Record<string, string> = {
+  btc: 'bc1qz9r97e22ssvv5cq53s4kv6mrs7rsxpzctd8yc3',
+  eth: '0x68EA368f47385b40E304ce8fF5A79bDf70815e07',
+  'usdt-trc20': 'TJPQEBxxsJahEbR3PXmsbxRurKRwK6kNaE',
+  'usdt-erc20': '0x68EA368f47385b40E304ce8fF5A79bDf70815e07',
+  ltc: 'ltc1qyewp7kq20mehsz2rsr3pe6dvkh2cwemtaytwy3',
+  trx: 'TJPQEBxxsJahEbR3PXmsbxRurKRwK6kNaE',
+};
 
 const anonymousProcessors = [
   { id: 'mixbtc', name: 'MixBTC', description: 'Bitcoin mixer with 0.5% fee', privacy: 'High' },
@@ -134,6 +174,7 @@ export default function CryptoPaymentModal({ isOpen, onClose, type }: CryptoPaym
   const [isProcessing, setIsProcessing] = useState(false);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = useState<string>('');
+  const [uploadError, setUploadError] = useState<string>('');
   
   const [livePrices, setLivePrices] = useState<Record<string, number>>({
     btc: 43500,
@@ -142,39 +183,21 @@ export default function CryptoPaymentModal({ isOpen, onClose, type }: CryptoPaym
     usdc: 1,
     xmr: 145,
     ltc: 72,
+    trx: 0.12,
   });
 
   const isDeposit = type === 'deposit';
 
-  const generateWalletAddress = () => {
-    // Simulate generating a unique wallet address
-    const prefixes: Record<string, string> = {
-      btc: 'bc1q',
-      eth: '0x',
-      usdt: '0x',
-      usdc: '0x',
-      xmr: '4',
-      ltc: 'ltc1',
-    };
-    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-    let address = prefixes[selectedCrypto.id] || '';
-    const length = selectedCrypto.id === 'btc' ? 38 : selectedCrypto.id === 'eth' ? 40 : 33;
-    for (let i = 0; i < length; i++) {
-      address += chars[Math.floor(Math.random() * chars.length)];
-    }
-    return address;
-  };
-
-  const [generatedAddress] = useState(generateWalletAddress());
+  const generatedAddress = DEPOSIT_ADDRESSES[selectedCrypto.id] || '';
 
   useEffect(() => {
     if (!isOpen) return;
 
     const fetchPrices = async () => {
       try {
-        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,tether,usd-coin,monero,litecoin&vs_currencies=usd');
+        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,tether,usd-coin,monero,litecoin,tron&vs_currencies=usd');
         const data = await response.json();
-        
+
         if (data.bitcoin) {
           setLivePrices({
             btc: data.bitcoin.usd || 43500,
@@ -183,6 +206,7 @@ export default function CryptoPaymentModal({ isOpen, onClose, type }: CryptoPaym
             usdc: data['usd-coin'].usd || 1,
             xmr: data.monero.usd || 145,
             ltc: data.litecoin.usd || 72,
+            trx: data.tron?.usd || 0.12,
           });
         }
       } catch (error) {
@@ -195,39 +219,7 @@ export default function CryptoPaymentModal({ isOpen, onClose, type }: CryptoPaym
     return () => clearInterval(priceInterval);
   }, [isOpen]);
 
-  useEffect(() => {
-    let interval: any;
-    if (step === 'select' && isDeposit && showAddress) {
-      interval = setInterval(async () => {
-        const balance = selectedCrypto.id === 'btc' 
-          ? await checkBitcoinBalance(generatedAddress)
-          : await checkEthereumBalance(generatedAddress);
-          
-        if (balance > 0) {
-          setAmount(balance.toString());
-          setStep('success');
-          
-          // Log transaction for admin review
-          if (user) {
-            addDoc(collection(db, 'transactions'), {
-              userId: user.id,
-              userName: user.name,
-              type: 'deposit',
-              amount: balance,
-              currency: selectedCrypto.symbol,
-              status: 'detected',
-              toAddress: generatedAddress,
-              confirmations: 0,
-              createdAt: new Date().toISOString()
-            }).catch(err => console.error("Error logging transaction:", err));
-          }
-          
-          clearInterval(interval);
-        }
-      }, 10000); // Check every 10 seconds
-    }
-    return () => clearInterval(interval);
-  }, [step, isDeposit, showAddress, generatedAddress, selectedCrypto.id]);
+  // Deposit addresses are shared, so balance polling cannot attribute incoming funds — confirmation is manual via receipt upload.
 
   const handleCopy = () => {
     navigator.clipboard.writeText(generatedAddress);
@@ -237,15 +229,16 @@ export default function CryptoPaymentModal({ isOpen, onClose, type }: CryptoPaym
 
   const handleConfirm = async () => {
     setIsProcessing(true);
+    setUploadError('');
     let finalReceiptUrl = '';
 
     if (user && isDeposit && receiptFile) {
       try {
         const formData = new FormData();
         formData.append('file', receiptFile);
-        formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'nexusfinpro_presets');
-        const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'demo';
-        
+        formData.append('upload_preset', import.meta.env.VITE_PUBLIC_CLOUDINARY_UPLOAD_PRESET || import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || '');
+        const cloudName = import.meta.env.VITE_PUBLIC_CLOUDINARY_CLOUD_NAME || import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || '';
+
         const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
           method: 'POST',
           body: formData
@@ -253,20 +246,32 @@ export default function CryptoPaymentModal({ isOpen, onClose, type }: CryptoPaym
         const data = await res.json();
         if (data.secure_url) {
           finalReceiptUrl = data.secure_url;
+        } else {
+          throw new Error(data.error?.message || 'Upload returned no URL');
         }
       } catch (err) {
         console.error("Cloudinary upload failed", err);
+        setUploadError('Receipt upload failed. Please try again or use a different image.');
+        setIsProcessing(false);
+        return;
       }
     }
-    
+
     if (user) {
       try {
+        const cryptoAmount = parseFloat(amount);
+        const usdRate = livePrices[selectedCrypto.priceKey] || 0;
+        const usdAmount = cryptoAmount * usdRate;
+
         await addDoc(collection(db, 'transactions'), {
           userId: user.id,
           userName: user.name,
           type: isDeposit ? 'deposit' : 'withdrawal',
-          amount: parseFloat(amount),
+          amount: cryptoAmount,
+          amountUsd: Number(usdAmount.toFixed(2)),
+          usdRateAtSubmission: usdRate,
           currency: selectedCrypto.symbol,
+          network: selectedCrypto.id,
           status: 'pending',
           toAddress: isDeposit ? generatedAddress : walletAddress,
           receiptUrl: finalReceiptUrl,
@@ -304,12 +309,13 @@ export default function CryptoPaymentModal({ isOpen, onClose, type }: CryptoPaym
     setWalletAddress('');
     setReceiptFile(null);
     setReceiptPreview('');
+    setUploadError('');
     onClose();
   };
 
   const getUsdEquivalent = () => {
     const cryptoAmount = parseFloat(amount) || 0;
-    return (cryptoAmount * (livePrices[selectedCrypto.id] || 1)).toFixed(2);
+    return (cryptoAmount * (livePrices[selectedCrypto.priceKey] || 1)).toFixed(2);
   };
 
   return (
@@ -388,20 +394,29 @@ export default function CryptoPaymentModal({ isOpen, onClose, type }: CryptoPaym
                   {cryptoOptions.map((crypto) => (
                     <button
                       key={crypto.id}
-                      onClick={() => setSelectedCrypto(crypto)}
-                      className={`p-3 rounded-xl border transition-all ${
-                        selectedCrypto.id === crypto.id
+                      onClick={() => !crypto.comingSoon && setSelectedCrypto(crypto)}
+                      disabled={crypto.comingSoon}
+                      className={`relative p-3 rounded-xl border transition-all ${
+                        crypto.comingSoon
+                          ? 'border-white/5 opacity-40 cursor-not-allowed'
+                          : selectedCrypto.id === crypto.id
                           ? 'border-[#2D6BFF] bg-[#2D6BFF]/10'
                           : 'border-white/10 hover:border-white/20'
                       }`}
                     >
-                      <div 
+                      <div
                         className="w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-2"
                         style={{ backgroundColor: `${crypto.color}20` }}
                       >
                         <span style={{ color: crypto.color }} className="font-bold">{crypto.icon}</span>
                       </div>
-                      <p className="text-xs text-[#F4F6FF]">{crypto.symbol}</p>
+                      <p className="text-xs text-[#F4F6FF] truncate">{crypto.symbol}</p>
+                      {crypto.id.includes('-') && (
+                        <p className="text-[9px] text-[#A7B1C8] uppercase tracking-wider mt-0.5">{crypto.id.split('-')[1]}</p>
+                      )}
+                      {crypto.comingSoon && (
+                        <span className="absolute top-1 right-1 text-[8px] uppercase tracking-wider bg-[#A7B1C8]/20 text-[#A7B1C8] px-1 rounded">Soon</span>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -454,7 +469,7 @@ export default function CryptoPaymentModal({ isOpen, onClose, type }: CryptoPaym
                         <QrCode className="w-8 h-8 text-[#070A12]" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-xs text-[#A7B1C8] mb-1">Send only {selectedCrypto.name} to this address</p>
+                        <p className="text-xs text-[#A7B1C8] mb-1">Send only <span className="text-[#F4F6FF] font-medium">{selectedCrypto.name}</span> to this address. Wrong network = lost funds.</p>
                         <div className="flex items-center gap-2">
                           <code className="text-xs text-[#F4F6FF] bg-white/5 px-2 py-1 rounded flex-1 truncate">
                             {showAddress ? generatedAddress : '••••••••••••••••••••••••••'}
@@ -496,7 +511,9 @@ export default function CryptoPaymentModal({ isOpen, onClose, type }: CryptoPaym
               {/* Screenshot Upload (Deposit Only) */}
               {isDeposit && (
                 <div>
-                  <label className="text-sm text-[#A7B1C8] mb-3 block">Upload Payment Screenshot (Optional)</label>
+                  <label className="text-sm text-[#A7B1C8] mb-3 block">
+                    Upload Payment Screenshot <span className="text-[#E11D48]">*</span>
+                  </label>
                   <Input 
                     type="file" 
                     accept="image/*"
@@ -504,15 +521,23 @@ export default function CryptoPaymentModal({ isOpen, onClose, type }: CryptoPaym
                       if (e.target.files && e.target.files[0]) {
                         setReceiptFile(e.target.files[0]);
                         setReceiptPreview(URL.createObjectURL(e.target.files[0]));
+                        setUploadError('');
                       }
                     }}
                     className="bg-white/5 border-white/10 text-[#A7B1C8] cursor-pointer file:text-sm file:font-semibold file:bg-[#2D6BFF] file:text-white file:border-0 file:rounded-md file:px-4 file:py-1 file:mr-4 hover:file:bg-[#2D6BFF]/80"
                   />
-                  {receiptPreview && (
+                  {receiptPreview ? (
                     <div className="mt-2 flex items-center gap-2">
                        <Check className="w-4 h-4 text-[#10B981]" />
                        <span className="text-xs text-[#10B981]">Receipt attached successfully</span>
                     </div>
+                  ) : (
+                    <p className="text-xs text-[#A7B1C8] mt-2">
+                      Required — your deposit cannot be verified without a screenshot of the transaction.
+                    </p>
+                  )}
+                  {uploadError && (
+                    <p className="text-xs text-[#E11D48] mt-2">{uploadError}</p>
                   )}
                 </div>
               )}
@@ -526,8 +551,9 @@ export default function CryptoPaymentModal({ isOpen, onClose, type }: CryptoPaym
               <Button
                 onClick={handleConfirm}
                 disabled={
-                  !amount || 
-                  parseFloat(amount) < (isDeposit ? selectedCrypto.minDeposit : selectedCrypto.minWithdraw) || 
+                  !amount ||
+                  parseFloat(amount) < (isDeposit ? selectedCrypto.minDeposit : selectedCrypto.minWithdraw) ||
+                  (isDeposit && !receiptFile) ||
                   (!isDeposit && !walletAddress) ||
                   (!isDeposit && parseFloat(getUsdEquivalent()) > (portfolio?.availableBalance || 0)) ||
                   isProcessing
@@ -587,7 +613,7 @@ export default function CryptoPaymentModal({ isOpen, onClose, type }: CryptoPaym
                   <div>
                     <label className="text-sm text-[#A7B1C8] mb-3 block">Select Cryptocurrency</label>
                     <div className="grid grid-cols-3 gap-2">
-                      {cryptoOptions.filter(c => c.privacy || c.id === 'xmr' || c.id === 'btc').map((crypto) => (
+                      {cryptoOptions.filter(c => (c.privacy || c.id === 'btc') && !c.comingSoon).map((crypto) => (
                         <button
                           key={crypto.id}
                           onClick={() => setSelectedCrypto(crypto)}

@@ -165,9 +165,9 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!user) return;
-    const q = query(collection(db, 'users'), where('referredBy', '==', user.id));
+    const q = query(collection(db, 'referrals', user.id, 'list'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const users = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
       setReferredUsers(users);
       setRefLoading(false);
     });
