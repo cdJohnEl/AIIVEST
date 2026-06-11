@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Check } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Check, RefreshCw } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,17 +32,19 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [resendEmailLoading, setResendEmailLoading] = useState(false);
   const [error, setError] = useState('');
+  const [warning, setWarning] = useState('');
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { register, isAuthenticated } = useAuth();
+  const { register, isAuthenticated, resendVerificationEmail } = useAuth();
 
   useEffect(() => {
-    // Prevent redirecting if we are actively registering (isLoading)
-    if (isAuthenticated && !isLoading) {
+    // Prevent redirecting if we are actively registering (isLoading) or if there's a verification email warning
+    if (isAuthenticated && !isLoading && !warning) {
       navigate('/dashboard', { replace: true });
     }
-  }, [isAuthenticated, navigate, isLoading]);
+  }, [isAuthenticated, navigate, isLoading, warning]);
 
   useEffect(() => {
     const ref = searchParams.get('ref');
@@ -54,6 +56,7 @@ export default function Register() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setWarning('');
 
     if (password !== confirmPassword) {
       setError('Passwords do not match');
@@ -84,15 +87,35 @@ export default function Register() {
         address,
         occupation
       };
-      
+
       const result = await register(name, email, password, extendedData, referralCode);
       if (!result.success) {
         setError(result.error || 'Registration failed. Please try again.');
+      } else if (result.warning === 'verification_email_failed') {
+        setWarning('Account created but verification email failed to send. Please check your spam folder or click the button below to resend.');
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred. Please try again.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleResendEmail = async () => {
+    setResendEmailLoading(true);
+    setError('');
+
+    try {
+      const result = await resendVerificationEmail();
+      if (!result.success) {
+        setError(result.error || 'Failed to resend verification email.');
+      } else {
+        setWarning('Verification email resent successfully! Please check your inbox.');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to resend verification email.');
+    } finally {
+      setResendEmailLoading(false);
     }
   };
 
@@ -130,7 +153,43 @@ export default function Register() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          {warning ? (
+            <div className="space-y-6 text-center animate-fadeIn">
+              <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm text-left">
+                {warning}
+              </div>
+              <div className="space-y-3">
+                <Button
+                  type="button"
+                  onClick={handleResendEmail}
+                  disabled={resendEmailLoading}
+                  variant="outline"
+                  className="w-full text-amber-400 border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-300 py-6"
+                >
+                  {resendEmailLoading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      Resending...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Resend Verification Email
+                    </>
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => navigate('/dashboard', { replace: true })}
+                  className="w-full btn-primary py-6"
+                >
+                  Go to Dashboard
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="name" className="text-[#F4F6FF]">Full Name</Label>
               <div className="relative">
@@ -438,15 +497,18 @@ export default function Register() {
               )}
             </Button>
           </form>
+          )}
 
-          <div className="mt-6 text-center">
-            <p className="text-[#A7B1C8] text-sm">
-              Already have an account?{' '}
-              <Link to="/login" className="text-[#2D6BFF] hover:underline font-medium">
-                Sign in
-              </Link>
-            </p>
-          </div>
+          {!warning && (
+            <div className="mt-6 text-center">
+              <p className="text-[#A7B1C8] text-sm">
+                Already have an account?{' '}
+                <Link to="/login" className="text-[#2D6BFF] hover:underline font-medium">
+                  Sign in
+                </Link>
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -5,9 +5,9 @@ import {
   createUserWithEmailAndPassword,
   signOut,
 } from 'firebase/auth';
-import { doc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
-import { sendVerificationEmail } from '../lib/emailService';
+import { sendVerificationEmail, resendVerificationEmail as resendVerificationEmailService } from '../lib/emailService';
 
 interface User {
   id: string;
@@ -33,7 +33,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   loading: boolean;
   login: (email: string, password: string) => Promise<{success: boolean, error?: string}>;
-  register: (name: string, email: string, password: string, extendedData?: any, referralCodeFromInput?: string) => Promise<{success: boolean, error?: string}>;
+  register: (name: string, email: string, password: string, extendedData?: any, referralCodeFromInput?: string) => Promise<{success: boolean, error?: string, warning?: string}>;
+  resendVerificationEmail: () => Promise<{success: boolean, error?: string}>;
   logout: () => Promise<void>;
 }
 
@@ -120,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
   };
 
-  const register = async (name: string, email: string, password: string, extendedData?: any, referralCodeFromInput?: string): Promise<{success: boolean, error?: string}> => {
+  const register = async (name: string, email: string, password: string, extendedData?: any, referralCodeFromInput?: string): Promise<{success: boolean, error?: string, warning?: string}> => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
@@ -260,15 +261,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
 
       // Send branded verification email via Resend completely skipping Firebase Admin links
+      let emailWarning: string | undefined = undefined;
       try {
         console.log('[AuthContext] Dispatching fully custom verification email via Resend...');
         await sendVerificationEmail(name, email, customVerificationLink);
-      } catch (err) {
+      } catch (err: any) {
         console.error('[AuthContext] Verification email dispatch failed:', err);
+        emailWarning = 'verification_email_failed';
       }
 
       setUser(newUser);
-      return { success: true };
+      return { success: true, warning: emailWarning };
     } catch (error: any) {
       console.error('Registration error:', error);
       if (error.code === 'auth/email-already-in-use') {
@@ -287,6 +290,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const resendVerificationEmail = async () => {
+    try {
+      if (!user || !auth.currentUser) {
+        return { success: false, error: 'No authenticated user' };
+      }
+
+      // Get fresh user data from Firestore to retrieve verificationToken
+      const userDocRef = doc(db, 'users', auth.currentUser.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (!userDocSnap.exists()) {
+        return { success: false, error: 'User data not found' };
+      }
+
+      const userData = userDocSnap.data();
+      const verificationToken = userData.verificationToken;
+
+      if (!verificationToken) {
+        return { success: false, error: 'Verification token not found. Please contact support.' };
+      }
+
+      // Generate verification link
+      const dynamicOrigin = window.location.origin;
+      const verificationLink = `${dynamicOrigin}/verify?token=${verificationToken}&uid=${auth.currentUser.uid}`;
+
+      // Resend the email
+      await resendVerificationEmailService(user.name, user.email, verificationLink);
+
+      return { success: true };
+    } catch (error: any) {
+      console.error('Resend verification email error:', error);
+      return { success: false, error: error.message || 'Failed to resend verification email' };
+    }
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -294,6 +332,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loading,
       login,
       register,
+      resendVerificationEmail,
       logout,
     }}>
       {children}

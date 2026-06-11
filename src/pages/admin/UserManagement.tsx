@@ -9,7 +9,8 @@ import {
 } from 'firebase/firestore';
 import { db, auth } from '../../lib/firebase';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+const rawUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+const BACKEND_URL = rawUrl.replace(/\/api\/?$/, '').replace(/\/$/, '');
 
 async function adminFetch(path: string, init: RequestInit = {}) {
   const token = await auth.currentUser?.getIdToken();
