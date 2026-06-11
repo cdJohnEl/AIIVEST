@@ -15,8 +15,14 @@ const db = admin.firestore();
 const app = express();
 const port = process.env.PORT || 3001;
 
-// Middleware
-app.use(cors());
+// Middleware - Proxy-aware CORS to prevent duplicate headers when proxied by Nginx
+app.use((req, res, next) => {
+  if (req.headers['x-real-ip'] || req.headers['x-forwarded-for']) {
+    // If request goes through Nginx, Nginx handles CORS. Skip Express CORS to avoid "*, *" duplication.
+    return next();
+  }
+  cors()(req, res, next);
+});
 app.use(express.json());
 
 // Initialize Nodemailer Transporter
@@ -204,6 +210,8 @@ async function handleEmailRequest(req, res) {
 
 app.post('/api/emails/send', handleEmailRequest);
 app.post('/api/send-email', handleEmailRequest);
+app.post('/emails/send', handleEmailRequest);
+app.post('/send-email', handleEmailRequest);
 
 // ─── ADMIN AUTH MIDDLEWARE ──────────────────────────────────────────────────
 
@@ -235,7 +243,7 @@ function generateReferralCode() {
   return code;
 }
 
-app.post('/api/admin/users', requireAdmin, async (req, res) => {
+app.post(['/api/admin/users', '/admin/users'], requireAdmin, async (req, res) => {
   try {
     const { name, email, role } = req.body;
     if (!name || !email || !['user', 'admin'].includes(role)) {
@@ -321,7 +329,7 @@ async function deleteCollection(query) {
   await batch.commit();
 }
 
-app.delete('/api/admin/users/:uid', requireAdmin, async (req, res) => {
+app.delete(['/api/admin/users/:uid', '/admin/users/:uid'], requireAdmin, async (req, res) => {
   const { uid } = req.params;
   if (!uid) return res.status(400).json({ error: 'uid required' });
   if (uid === req.adminUid) {
