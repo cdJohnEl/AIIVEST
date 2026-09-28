@@ -11,55 +11,55 @@ const plans = [
     id: 'starter',
     name: 'Starter',
     icon: Sparkles,
-    price: 'Free',
-    period: '',
-    description: 'Explore the platform. Build a plan. Simulate performance.',
+    price: '$50 – $199',
+    period: 'monthly commitment',
+    description: 'Basic AI-managed portfolio with 24/7 risk monitoring.',
+    roi: '4% – 6% Target ROI',
     features: [
-      'Portfolio simulator',
-      'Basic AI insights',
-      'Market data access',
-      'Educational resources',
-      'Community support',
+      'Basic AI-managed portfolio',
+      '24/7 risk monitoring',
+      'Weekly performance report',
+      'Secure deposits (BTC, ETH, USDT)',
+      'Optional privacy layers',
     ],
     cta: 'Get Started',
     highlighted: false,
   },
   {
-    id: 'growth',
-    name: 'Growth',
+    id: 'pro',
+    name: 'Pro',
     icon: Zap,
-    price: '0.75%',
-    period: '/ year',
-    description: 'Full AI portfolio management, rebalancing, and tax optimization.',
+    price: '$200 – $999',
+    period: 'monthly commitment',
+    description: 'Advanced AI strategies (momentum & arbitrage) with priority support.',
+    roi: '7% – 9% Target ROI',
     features: [
-      'Everything in Starter',
-      'AI-powered investing',
-      'Automatic rebalancing',
-      'Tax-loss harvesting',
+      'Advanced AI strategies (momentum & arbitrage)',
       'Priority support',
-      'Advanced analytics',
+      'Monthly strategy call',
+      'Secure deposits (BTC, ETH, USDT)',
+      'Optional privacy layers',
     ],
     cta: 'Start Investing',
     highlighted: true,
   },
   {
-    id: 'pro',
-    name: 'Pro',
+    id: 'elite',
+    name: 'Elite',
     icon: Crown,
-    price: '0.50%',
-    period: '/ year',
-    description: 'Dedicated support, custom strategies, and advanced reporting.',
+    price: '$1,000+',
+    period: 'monthly commitment',
+    description: 'Dedicated portfolio manager and custom strategy tuning.',
+    roi: '10% – 12% Target ROI',
     features: [
-      'Everything in Growth',
-      'Dedicated advisor',
-      'Custom strategies',
-      'Advanced reporting',
-      'VIP events access',
-      'White-glove onboarding',
+      'Dedicated portfolio manager',
+      'Custom strategy tuning',
+      'Quarterly in-depth audit',
+      'Secure deposits (BTC, ETH, USDT)',
+      'Optional privacy layers',
     ],
-    cta: 'Contact Sales',
+    cta: 'Start Elite Strategy',
     highlighted: false,
-    note: 'Minimums apply',
   },
 ];
 
@@ -154,14 +154,14 @@ export default function PricingSection() {
                   <plan.icon className={`w-6 h-6 ${plan.highlighted ? 'text-white' : 'text-[#2D6BFF]'}`} />
                 </div>
                 <h3 className="text-xl font-semibold text-[#F4F6FF] mb-2">{plan.name}</h3>
-                <div className="flex items-baseline gap-1 mb-3">
+                <div className="flex items-baseline gap-1 mb-2">
                   <span className="text-3xl lg:text-4xl font-bold text-[#F4F6FF]">{plan.price}</span>
-                  <span className="text-[#A7B1C8]">{plan.period}</span>
+                  <span className="text-[#A7B1C8] text-xs">{plan.period}</span>
+                </div>
+                <div className="inline-block bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20 font-bold text-xs px-2.5 py-1 rounded-md mb-3">
+                  {plan.roi}
                 </div>
                 <p className="text-sm text-[#A7B1C8] leading-relaxed">{plan.description}</p>
-                {plan.note && (
-                  <p className="text-xs text-[#A7B1C8] mt-2">{plan.note}</p>
-                )}
               </div>
 
               {/* Features */}

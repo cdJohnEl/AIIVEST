@@ -45,12 +45,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('AuthContext: Initializing onAuthStateChanged...');
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      console.log('AuthContext: onAuthStateChanged triggered', firebaseUser?.uid);
-      
       if (!firebaseUser) {
-        console.log('AuthContext: No user authenticated');
         setUser(null);
         setLoading(false);
         return;
@@ -61,7 +57,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const unsubscribeProfile = onSnapshot(userDocRef, (docSnap) => {
         if (docSnap.exists()) {
           const userData = docSnap.data();
-          console.log('AuthContext: User data found in Firestore', userData);
           setUser({
             id: firebaseUser.uid,
             name: userData.name || firebaseUser.displayName || 'User',
@@ -138,7 +133,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           subscribedAt: serverTimestamp(),
           source: 'signup_auto'
         });
-        console.log('[AuthContext] User automatically subscribed to newsletter');
       } catch (err) {
         console.error('[AuthContext] Failed to auto-subscribe (non-blocking):', err);
       }
@@ -263,7 +257,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Send branded verification email via Resend completely skipping Firebase Admin links
       let emailWarning: string | undefined = undefined;
       try {
-        console.log('[AuthContext] Dispatching fully custom verification email via Resend...');
         await sendVerificationEmail(name, email, customVerificationLink);
       } catch (err: any) {
         console.error('[AuthContext] Verification email dispatch failed:', err);

@@ -56,64 +56,58 @@ interface InvestmentContextType {
 
 const investmentPlans: InvestmentPlan[] = [
   {
-    id: 'conservative',
-    name: 'Conservative Growth',
-    description: 'Stable returns with minimal risk. Perfect for beginners.',
-    minAmount: 100,
-    maxAmount: 10000,
-    avgROI: 8.5,
+    id: 'starter',
+    name: 'Starter',
+    description: 'Basic AI-managed portfolio with 24/7 risk monitoring and weekly performance reports.',
+    minAmount: 50,
+    maxAmount: 199,
+    avgROI: 5.0, // 4% – 6% Target Monthly ROI
     riskLevel: 'low',
-    duration: '12 months',
-    features: ['Capital protection', 'Monthly payouts', 'Instant withdrawal', 'AI monitoring'],
+    duration: 'Monthly',
+    features: [
+      'Basic AI-managed portfolio',
+      '24/7 risk monitoring',
+      'Weekly performance report',
+      'Secure deposits (BTC, ETH, USDT)',
+      'Optional privacy layers'
+    ],
     color: '#10B981',
   },
   {
-    id: 'balanced',
-    name: 'Balanced Portfolio',
-    description: 'Optimal risk-reward balance for steady wealth building.',
-    minAmount: 500,
-    maxAmount: 50000,
-    avgROI: 15.2,
+    id: 'pro',
+    name: 'Pro',
+    description: 'Advanced AI strategies (momentum & arbitrage) with priority support and strategy calls.',
+    minAmount: 200,
+    maxAmount: 999,
+    avgROI: 8.0, // 7% – 9% Target Monthly ROI
     riskLevel: 'medium',
-    duration: '18 months',
-    features: ['Diversified assets', 'Weekly payouts', 'Rebalancing', 'Tax optimization'],
+    duration: 'Monthly',
+    features: [
+      'Advanced AI strategies (momentum & arbitrage)',
+      'Priority support',
+      'Monthly strategy call',
+      'Secure deposits (BTC, ETH, USDT)',
+      'Optional privacy layers'
+    ],
     color: '#2D6BFF',
   },
   {
-    id: 'growth',
-    name: 'Growth Accelerator',
-    description: 'Higher returns with moderate risk for ambitious investors.',
+    id: 'elite',
+    name: 'Elite',
+    description: 'Dedicated portfolio manager, custom strategy tuning, and quarterly in-depth audits.',
     minAmount: 1000,
     maxAmount: 100000,
-    avgROI: 22.8,
-    riskLevel: 'medium',
-    duration: '24 months',
-    features: ['Growth stocks', 'Daily compounding', 'Priority support', 'Advanced analytics'],
-    color: '#8B5CF6',
-  },
-  {
-    id: 'aggressive',
-    name: 'Alpha Seeker',
-    description: 'Maximum returns for experienced, risk-tolerant investors.',
-    minAmount: 5000,
-    maxAmount: 500000,
-    avgROI: 35.5,
-    riskLevel: 'high',
-    duration: '36 months',
-    features: ['Venture exposure', 'Options strategy', 'Dedicated manager', 'VIP access'],
-    color: '#F59E0B',
-  },
-  {
-    id: 'crypto',
-    name: 'Crypto Alpha',
-    description: 'AI-powered cryptocurrency portfolio with dynamic hedging.',
-    minAmount: 2000,
-    maxAmount: 250000,
-    avgROI: 48.2,
+    avgROI: 11.0, // 10% – 12% Target Monthly ROI
     riskLevel: 'high',
     duration: 'Flexible',
-    features: ['Multi-chain', 'DeFi yields', 'Auto-hedging', '24/7 trading'],
-    color: '#EC4899',
+    features: [
+      'Dedicated portfolio manager',
+      'Custom strategy tuning',
+      'Quarterly in-depth audit',
+      'Secure deposits (BTC, ETH, USDT)',
+      'Optional privacy layers'
+    ],
+    color: '#8B5CF6',
   },
 ];
 
@@ -155,7 +149,6 @@ export function InvestmentProvider({ children }: { children: React.ReactNode }) 
   // Fetch portfolio real-time
   useEffect(() => {
     if (!user) {
-      console.log('InvestmentContext: No user, resetting portfolio');
       setPortfolio({
         totalInvested: 0,
         totalReturns: 0,
@@ -169,14 +162,10 @@ export function InvestmentProvider({ children }: { children: React.ReactNode }) 
       return;
     }
 
-    console.log('InvestmentContext: Initializing portfolio listener for', user.id);
     const portfolioRef = doc(db, 'portfolios', user.id);
     const unsubscribe = onSnapshot(portfolioRef, (docSnap) => {
       if (docSnap.exists()) {
-        console.log('InvestmentContext: Portfolio data received');
         setPortfolio(docSnap.data() as Portfolio);
-      } else {
-        console.log('InvestmentContext: Portfolio does not exist yet (waiting for registration sync)');
       }
       setPortfolioLoading(false);
     }, (error) => {

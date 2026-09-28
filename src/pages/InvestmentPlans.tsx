@@ -53,7 +53,7 @@ export default function InvestmentPlans() {
   };
 
   const calculateReturns = (amount: number, roi: number, days: number) => {
-    const dailyRate = roi / 365 / 100;
+    const dailyRate = roi / 30 / 100;
     return amount * dailyRate * days;
   };
 

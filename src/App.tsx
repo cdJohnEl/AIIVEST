@@ -38,12 +38,9 @@ import { LiveChat } from './components/LiveChat';
 import './App.css';
 
 function AppRoutes() {
-  const { loading, isAuthenticated, user } = useAuth();
-
-  console.log('AppRoutes: Rendering...', { loading, isAuthenticated, userId: user?.id });
+  const { loading } = useAuth();
 
   if (loading) {
-    console.log('AppRoutes: Showing loading spinner');
     return (
       <div className="min-h-screen bg-[#070A12] flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-[#2D6BFF]/20 border-t-[#2D6BFF] rounded-full animate-spin" />
@@ -51,7 +48,6 @@ function AppRoutes() {
     );
   }
 
-  console.log('AppRoutes: Rendering main layout');
   return (
     <div className="relative min-h-screen bg-[#070A12]">
       <div className="noise-overlay" />

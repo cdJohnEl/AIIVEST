@@ -81,6 +81,10 @@ service cloud.firestore {
     }
 
     // BLOG POSTS (Public Read, Admin Write)
+    match /blogs/{postId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
     match /blog/{postId} {
       allow read: if true;
       allow write: if isAdmin();
