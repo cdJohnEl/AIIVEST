@@ -91,11 +91,14 @@ export function LiveChat() {
       };
       
       setMessages((prev: ChatMessage[]) => [...prev, botResponse]);
-    } catch (error) {
+    } catch (error: any) {
       console.error('LiveChat Groq Error:', error);
+      const isApiKeyIssue = error?.message?.toLowerCase().includes('api key') || error?.message?.includes('401');
       const errorMessage: ChatMessage = {
         id: Date.now() + 1,
-        text: "I'm sorry, I'm experiencing some technical difficulties. Please try again in a moment.",
+        text: isApiKeyIssue
+          ? "⚠️ **API Key Configuration Error**: The Groq API key is invalid or expired. Please update `VITE_GROQ_API_KEY` in your `.env` file with a valid key from [console.groq.com](https://console.groq.com)."
+          : "I'm sorry, I'm experiencing some technical difficulties. Please try again in a moment.",
         sender: 'bot',
         timestamp: new Date(),
       };
