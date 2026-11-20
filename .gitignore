@@ -11,6 +11,8 @@ node_modules/
 dist/
 dist-ssr/
 build/
+*.zip
+dist.zip
 
 # ---- Environment & Secrets ----
 # NEVER commit these files

@@ -213,6 +213,62 @@ app.post('/api/send-email', handleEmailRequest);
 app.post('/emails/send', handleEmailRequest);
 app.post('/send-email', handleEmailRequest);
 
+// ─── AI CHAT PROXY ENDPOINT ─────────────────────────────────────────────────
+const GROQ_API_KEY = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
+const CHAT_SUPPORTED_MODELS = ['openai/gpt-oss-20b', 'qwen/qwen3.8-27b', 'openai/gpt-oss-120b'];
+
+app.post(['/api/chat', '/chat'], async (req, res) => {
+  try {
+    const { messages } = req.body;
+    if (!messages || !Array.isArray(messages)) {
+      return res.status(400).json({ error: 'Messages array is required' });
+    }
+
+    const apiKey = GROQ_API_KEY || process.env.GROQ_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: 'GROQ_API_KEY is not configured on the server' });
+    }
+
+    let lastError = null;
+    for (const model of CHAT_SUPPORTED_MODELS) {
+      try {
+        const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model,
+            messages,
+            temperature: 0.7,
+            max_tokens: 2000,
+          }),
+        });
+
+        if (!groqRes.ok) {
+          const errData = await groqRes.json().catch(() => ({}));
+          console.error(`[Server Groq] Error with ${model} (${groqRes.status}):`, errData);
+          lastError = new Error(errData.error?.message || `Groq error with ${model}`);
+          if (groqRes.status === 401) throw lastError;
+          continue;
+        }
+
+        const data = await groqRes.json();
+        return res.json({ content: data.choices?.[0]?.message?.content });
+      } catch (err) {
+        if (err.message && err.message.toLowerCase().includes('api key')) throw err;
+        lastError = err;
+      }
+    }
+
+    throw lastError || new Error('Failed to generate completion from all models');
+  } catch (error) {
+    console.error('Chat endpoint error:', error);
+    res.status(500).json({ error: error.message || 'Internal server error' });
+  }
+});
+
 // ─── ADMIN AUTH MIDDLEWARE ──────────────────────────────────────────────────
 
 async function requireAdmin(req, res, next) {
